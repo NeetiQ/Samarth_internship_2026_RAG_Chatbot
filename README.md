@@ -197,7 +197,7 @@ AI Response
 
 ### Vector Database
 
-* ChromaDB
+* PG Vector
 
 ### Document Processing
 
