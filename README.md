@@ -102,16 +102,28 @@ Upload Supreme Court judgment PDFs and receive:
 Visual representation of:
 
 Facts
+
 ↓
+
 Issues
+
 ↓
+
 Arguments
+
 ↓
+
 Precedents
+
 ↓
+
 Reasoning
+
 ↓
+
 Verdict
+
+
 
 ### 🔗 Citation Network
 
@@ -129,20 +141,35 @@ Interactive graph displaying relationships between judgments and precedents.
 ## System Architecture
 
 User Query
+
 ↓
+
 Frontend (React.js)
+
 ↓
+
 Backend API (FastAPI)
+
 ↓
+
 RAG Pipeline
+
 ↓
+
 Vector Database
+
 ↓
+
 Retrieved Supreme Court Judgments
+
 ↓
+
 Large Language Model
+
 ↓
+
 AI Response
+
 
 ---
 
