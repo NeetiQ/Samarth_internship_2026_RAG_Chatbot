@@ -1,59 +1,72 @@
+import { motion } from "framer-motion";
+import "./Login.css";
+
 export default function Login() {
   return (
-    <div className="min-h-screen flex">
+    <div className="login-container">
 
-      {/* Left Section */}
-      <div className="hidden lg:flex w-1/2 bg-slate-800 text-white flex-col justify-center items-center">
+      {/* Background Glow */}
+      <div className="blob blob1"></div>
+      <div className="blob blob2"></div>
 
-        <div className="text-center">
-
-          <h1 className="text-6xl font-bold">
-            ⚖️ NyayaAI
-          </h1>
-
-          <p className="text-slate-300 mt-4 text-xl">
-            Justice Meets Intelligence
-          </p>
-
+      {/* Left Side */}
+      <motion.div
+        className="left-panel"
+        initial={{ x: -100, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.8 }}
+      >
+        <div className="brand">
+          <h1>⚖️ NyayaAI</h1>
+          <p>Justice Meets Intelligence</p>
         </div>
 
-      </div>
+        <div className="login-card">
+          <h2>Welcome Back</h2>
 
-      {/* Right Section */}
-      <div className="w-full lg:w-1/2 flex justify-center items-center bg-slate-50">
+          <form>
+            <input type="email" placeholder="Email Address" />
+            <input type="password" placeholder="Password" />
 
-        <div className="bg-white p-10 rounded-3xl shadow-xl w-[420px]">
+            <button type="submit">Sign In</button>
 
-          <h2 className="text-3xl font-bold text-slate-800">
-            Sign In
-          </h2>
+            <button className="google-btn" type="button">
+              Continue with Google
+            </button>
+          </form>
 
-          <p className="text-gray-500 mt-2 mb-6">
-            Welcome back
+          <p className="signup-link">
+            Don't have an account? <span>Sign Up</span>
+          </p>
+        </div>
+      </motion.div>
+
+      {/* Right Side */}
+      <motion.div
+        className="right-panel"
+        animate={{
+          y: [0, -20, 0],
+        }}
+        transition={{
+          repeat: Infinity,
+          duration: 4,
+        }}
+      >
+        <div className="illustration">
+          <div className="justice-icon">⚖️</div>
+
+          <h2>AI-Powered Legal Assistant</h2>
+
+          <p>
+            Analyze judgments, compare cases, generate summaries,
+            and gain legal insights instantly.
           </p>
 
-          <input
-            type="email"
-            placeholder="Email"
-            className="w-full border rounded-xl p-3 mb-4"
-          />
-
-          <input
-            type="password"
-            placeholder="Password"
-            className="w-full border rounded-xl p-3 mb-6"
-          />
-
-          <button
-            className="w-full bg-blue-600 text-white py-3 rounded-xl"
-          >
-            Continue
-          </button>
-
+          <div className="quote">
+            "Justice delayed is justice denied."
+          </div>
         </div>
-
-      </div>
-
+      </motion.div>
     </div>
   );
 }

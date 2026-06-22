@@ -1,5 +1,17 @@
-import Login from "./pages/Login";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-export default function App() {
-  return <Login />;
+import Login from "./pages/Login";
+import CaseComparison from "./pages/CaseComparison";
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/compare" element={<CaseComparison />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
+
+export default App;
