@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
 import CaseComparison from "./pages/CaseComparison";
 
 function App() {
@@ -8,7 +9,16 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Login />} />
-        <Route path="/compare" element={<CaseComparison />} />
+
+        <Route
+          path="/dashboard"
+          element={<Dashboard />}
+        />
+
+        <Route
+          path="/compare"
+          element={<CaseComparison />}
+        />
       </Routes>
     </BrowserRouter>
   );
