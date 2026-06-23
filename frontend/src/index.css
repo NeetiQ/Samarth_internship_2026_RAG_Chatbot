@@ -1,11 +1,48 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap');
 @import "tailwindcss";
 
-body{
-  font-family:'Inter',sans-serif;
-  background:#F8FAFC;
+body {
+  font-family: 'Inter', sans-serif;
+  background: #F8FAFC;
 }
 
-h1,h2,h3,h4,h5{
-  font-family:'Poppins',sans-serif;
+h1,
+h2,
+h3,
+h4,
+h5 {
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Dark Theme */
+
+.dark-theme {
+  background-color: #0f172a !important;
+}
+
+.dark-theme body {
+  background-color: #0f172a !important;
+}
+
+.dark-theme .bg-white {
+  background-color: #1e293b !important;
+}
+
+.dark-theme input {
+  background-color: #334155 !important;
+  color: white !important;
+}
+
+.dark-theme h1,
+.dark-theme h2,
+.dark-theme h3,
+.dark-theme h4,
+.dark-theme h5,
+.dark-theme p,
+.dark-theme span {
+  color: white;
+}
+
+.dark-theme svg {
+  color: white;
 }

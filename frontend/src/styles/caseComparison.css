@@ -418,3 +418,74 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================
+   DARK MODE SUPPORT
+========================== */
+
+.dark-theme .comparison-page {
+  color: white;
+}
+
+.dark-theme .card {
+  background: #1e293b !important;
+  border: 1px solid #334155;
+  color: white !important;
+}
+
+.dark-theme .hero-card h1,
+.dark-theme .hero-card p {
+  color: white !important;
+}
+
+.dark-theme .card h2,
+.dark-theme .card h3,
+.dark-theme .timeline-title,
+.dark-theme .breakdown-title,
+.dark-theme .matrix-row div:first-child {
+  color: white !important;
+}
+
+.dark-theme .matrix-row {
+  border-bottom: 1px solid #334155;
+}
+
+.dark-theme .matrix-row:hover {
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.dark-theme .subtitle,
+.dark-theme .timeline-item p,
+.dark-theme .ai-step {
+  color: #cbd5e1 !important;
+}
+
+.dark-theme .search-section input {
+  background: #334155;
+  color: white;
+  border: 1px solid #475569;
+}
+
+.dark-theme .search-section input::placeholder {
+  color: #94a3b8;
+}
+
+.dark-theme .progress {
+  background: #334155;
+}
+
+.dark-theme .ai-bar {
+  background: #334155;
+}
+
+.dark-theme .comparison-matrix {
+  background: #1e293b;
+}
+
+.dark-theme .matrix-header {
+  background: #0f172a;
+}
+
+.dark-theme .timeline-column::before {
+  background: rgba(96, 165, 250, 0.4);
+}
