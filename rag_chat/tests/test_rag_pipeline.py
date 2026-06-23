@@ -1,4 +1,4 @@
-from rag_chat.workflows.chat_workflow import ChatWorkflow
+from rag_chat.workflows.rag_pipeline import RAGPipeline
 
 
 class MockRetrievalService:
@@ -7,6 +7,7 @@ class MockRetrievalService:
             "chunks": ["Sample legal chunk"],
             "metadata": []
         }
+
 
 class MockPromptService:
     def build_prompt(self, query, chunks):
@@ -30,7 +31,7 @@ class MockCitationService:
 
 def test_process_query():
 
-    workflow = ChatWorkflow(
+    workflow = RAGPipeline(
         retrieval_service=MockRetrievalService(),
         prompt_service=MockPromptService(),
         llm_service=MockLLMService(),
@@ -41,6 +42,5 @@ def test_process_query():
         "What is the notice period?"
     )
 
-    assert response.answer == "This is a generated answer"
-    assert len(response.citations) == 1
-    
+    assert response["answer"] == "This is a generated answer"
+    assert len(response["citations"]) == 1
