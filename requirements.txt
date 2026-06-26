@@ -1,2 +1,15 @@
-# Core dependencies
-python-dotenv
+fastapi==0.116.1
+uvicorn==0.35.0
+sentence-transformers==5.0.0
+transformers==4.53.2
+torch>=2.2.0
+psycopg[binary]==3.2.9
+python-dotenv==1.1.1
+pydantic==2.11.7
+numpy>=1.26.0
+huggingface-hub>=0.33.4
+tokenizers>=0.21.0
+safetensors>=0.5.3
+scikit-learn>=1.7.0
+scipy>=1.16.0
+tqdm>=4.67.1
