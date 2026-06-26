@@ -489,3 +489,21 @@ body {
 .dark-theme .timeline-column::before {
   background: rgba(96, 165, 250, 0.4);
 }
+
+/* Extra Dark Mode Fixes */
+
+.dark-theme .timeline-item strong {
+  color: #ffffff;
+}
+
+.dark-theme .breakdown-row {
+  color: #ffffff;
+}
+
+.dark-theme .comparison-matrix .matrix-row {
+  color: #e2e8f0;
+}
+
+.dark-theme .comparison-matrix .matrix-row div {
+  color: #e2e8f0;
+}
