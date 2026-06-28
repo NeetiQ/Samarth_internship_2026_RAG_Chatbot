@@ -1,0 +1,5 @@
+import os
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+RETRIEVAL_API_URL = os.getenv("RETRIEVAL_API_URL")
