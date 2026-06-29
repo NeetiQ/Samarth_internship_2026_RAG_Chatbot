@@ -8,10 +8,16 @@ from app.core.exceptions import (
     sqlalchemy_exception_handler,
     general_exception_handler,
 )
+import os
+from dotenv import load_dotenv
+
+# Load environments from multiple sources before other app imports
+load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env"), override=True)
+load_dotenv(os.path.join(os.path.dirname(__file__), "../../ragchat.env"), override=True)
+
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from app.api.v1 import api_router
-
 settings = get_settings()
 
 def create_app() -> FastAPI:
