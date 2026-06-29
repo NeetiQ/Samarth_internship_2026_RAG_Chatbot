@@ -1,90 +1,40 @@
-# Legal RAG
+# Legal RAG Backend Foundation (V2)
 
-Retrieval Augmented Generation system for legal document processing and analysis.
-- Utility functions
-- Data models
-- Constants
+Production-ready backend architecture for the Legal Retrieval-Augmented Generation (RAG) assistant.
 
-## Tech Stack
+## Features
+- **Clean Architecture**: Domain-driven services, Repositories, and modular Routers.
+- **Asynchronous**: FastAPI async routers, `asyncpg` for PostgreSQL.
+- **PGVector Native**: Embeddings are stored natively in the `chunks` table.
+- **Background Processing**: `ProcessingJob` model tracks ingestion pipelines without heavy queues like Celery.
 
-- **Backend**: Python (FastAPI)
-- **Frontend**: React/Next.js
-- **Vector DB**: [Configured in vectordb/]
-- **LLM**: [Configured in llm/]
-- **Embeddings**: [Configured in embeddings/]
-- **Deployment**: Docker, Docker Compose
+## Quick Start (Docker)
 
-## Getting Started
+Ensure Docker and Docker Compose are installed. 
 
-### Prerequisites
-- Python 3.9+
-- Node.js 14+
-- Docker & Docker Compose
-
-### Installation
-
-1. Clone the repository
-2. Copy environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   npm install  # for frontend
-   ```
-
-4. Start services:
-   ```bash
-   docker-compose up
-   ```
-
-## Project Structure
-
-See [docs/architecture.md](docs/architecture.md) for detailed architecture documentation.
-
-## Documentation
-
-- [Architecture Overview](docs/architecture.md)
-- [API Contracts](docs/api-contracts.md)
-- [Team Deliverables](docs/team-deliverables.md)
-- [Deployment Guide](docs/deployment.md)
-- [Data Sources](docs/data-sources.md)
-- [Testing Checklist](docs/testing-checklist.md)
-- [Daily MoM](docs/daily-mom/) - Daily minutes of meeting
-
-## Development
-
-### Running Tests
 ```bash
-pytest backend/app/tests
-pytest ingestion/tests
-pytest retrieval/tests
-pytest rag_chat/tests
+docker-compose up --build
 ```
+This starts:
+1. `db`: PostgreSQL 16 with `pgvector` enabled.
+2. `api`: The FastAPI server on port `8000`.
 
-### Code Style
-- Python: Black, isort, flake8
-- JavaScript: ESLint, Prettier
+View Swagger Docs at: `http://localhost:8000/docs`
 
-## Contributing
+## Configuration
+All configurable values (Chunk sizes, OCR engine, Model names, etc.) are loaded via `pydantic-settings` from the `.env` file or environment variables. Do not hardcode these in the application logic. Modify `app/core/settings.py` for new keys.
 
-1. Create a feature branch
-2. Make changes in your team's module
-3. Add tests
-4. Submit PR with documentation
+## Folder Structure
+- `app/api/v1/`: HTTP Routers. **No business logic here.**
+- `app/services/`: Domain-specific business logic (documents, storage, ingestion, retrieval, rag, shared).
+- `app/repositories/`: Database abstraction layer (SQLAlchemy wrappers).
+- `app/models/`: SQLAlchemy declarative tables.
+- `app/schemas/`: Pydantic validation for API I/O.
+- `docs/`: API Contracts, DB schema details.
 
-## Team Assignments
+## How to Extend (For Teams)
+- **Team A (Ingestion)**: Implement logic in `app/services/ingestion/ingestion_service.py` (`process_document_background`).
+- **Team B (Retrieval)**: Implement PGVector queries in `app/services/retrieval/retrieval_service.py`.
+- **Team C (LLM)**: Implement Gemini orchestration in `app/services/rag/rag_service.py`.
 
-| Team | Module      | Responsibility      |
-| ---- | ----------- | ------------------- |
-| A    | ingestion/  | Document processing |
-| B    | retrieval/  | Search & retrieval  |
-| C    | rag_chat/   | Conversation & LLM  |
-| D    | frontend/   | User interface      |
-| E    | deployment/ | DevOps & deployment |
-
-## Support
-
-For issues and questions, check the daily MoM or contact the relevant team.
+*Note: You do not need to modify routers or repositories unless you are altering the DB schema or adding brand new endpoints.*
