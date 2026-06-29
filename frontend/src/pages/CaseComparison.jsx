@@ -27,14 +27,16 @@ export default function CaseComparison() {
       <div className="flex-1 p-8">
         <Navbar />
 
-        <div className="comparison-page">
-
+        {/* ONLY CHANGE IS HERE */}
+        <div
+          className={`comparison-page ${
+            darkMode ? "dark-theme" : ""
+          }`}
+        >
           {/* HERO */}
           <motion.div
             className={`hero-card ${
-              darkMode
-                ? "bg-slate-800 text-white"
-                : ""
+              darkMode ? "bg-slate-800 text-white" : ""
             }`}
             initial={{ opacity: 0, y: -15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -52,9 +54,7 @@ export default function CaseComparison() {
           {/* SEARCH */}
           <motion.div
             className={`card search-card ${
-              darkMode
-                ? "bg-slate-800 text-white"
-                : ""
+              darkMode ? "bg-slate-800 text-white" : ""
             }`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -67,9 +67,7 @@ export default function CaseComparison() {
 
             <motion.div
               className={`card similarity-card ${
-                darkMode
-                  ? "bg-slate-800 text-white"
-                  : ""
+                darkMode ? "bg-slate-800 text-white" : ""
               }`}
               whileHover={{ y: -4 }}
             >
@@ -78,9 +76,7 @@ export default function CaseComparison() {
 
             <motion.div
               className={`card analysis-card ${
-                darkMode
-                  ? "bg-slate-800 text-white"
-                  : ""
+                darkMode ? "bg-slate-800 text-white" : ""
               }`}
               whileHover={{ y: -4 }}
             >
@@ -92,9 +88,7 @@ export default function CaseComparison() {
           {/* INSIGHTS */}
           <motion.div
             className={`card ${
-              darkMode
-                ? "bg-slate-800 text-white"
-                : ""
+              darkMode ? "bg-slate-800 text-white" : ""
             }`}
             whileHover={{ y: -4 }}
           >
@@ -104,9 +98,7 @@ export default function CaseComparison() {
           {/* COMPARISON */}
           <motion.div
             className={`card ${
-              darkMode
-                ? "bg-slate-800 text-white"
-                : ""
+              darkMode ? "bg-slate-800 text-white" : ""
             }`}
             whileHover={{ y: -4 }}
           >
@@ -118,9 +110,7 @@ export default function CaseComparison() {
           {/* TIMELINE */}
           <motion.div
             className={`card ${
-              darkMode
-                ? "bg-slate-800 text-white"
-                : ""
+              darkMode ? "bg-slate-800 text-white" : ""
             }`}
             whileHover={{ y: -4 }}
           >
