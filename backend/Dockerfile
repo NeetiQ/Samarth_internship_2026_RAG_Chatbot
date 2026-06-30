@@ -11,8 +11,10 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Install Python dependencies
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt ./team_requirements.txt
+RUN pip install --no-cache-dir -r team_requirements.txt || true
 
 # Copy application code
 COPY . .
@@ -20,5 +22,5 @@ COPY . .
 # Expose port
 EXPOSE 8000
 
-# Command to run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Command to run the application (running from root directory to allow imports)
+CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

@@ -2,9 +2,18 @@
 Retrieval API endpoints
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
+from pydantic import BaseModel
+from typing import List, Optional
+import time
+import logging
+
+from retrieval.search.retriever import Retriever
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
+retriever = Retriever()
 
 # TODO: Add retrieval endpoints
 
@@ -43,18 +52,33 @@ async def search_documents(
     Returns:
         Search results with relevance scores
     """
-    # TODO: Implement actual search logic
-    # 1. Generate query embedding
-    # 2. Perform vector similarity search
-    # 3. Perform BM25 search
-    # 4. Merge and rerank results
-    # 5. Return top-k results
-    
-    logger.info(f"Search query received: {q}")
-    
-    return SearchResponse(
-        query=q,
-        results=[],
-        total_results=0,
-        processing_time_ms=0,
-    )
+    start_time = time.time()
+    try:
+        raw_results = retriever.retrieve(query=q, top_k=top_k)
+        
+        results = []
+        for r in raw_results:
+            results.append(SearchResult(
+                id=str(r.get("chunk_id", "")),
+                text=r.get("page_content", ""),
+                score=float(r.get("distance", 0.0)),
+                document_name=r.get("metadata", {}).get("source", "unknown"),
+                page=r.get("metadata", {}).get("page", 0)
+            ))
+            
+        processing_time_ms = int((time.time() - start_time) * 1000)
+        
+        return SearchResponse(
+            query=q,
+            results=results,
+            total_results=len(results),
+            processing_time_ms=processing_time_ms,
+        )
+    except Exception as e:
+        logger.error(f"Search failed: {e}")
+        return SearchResponse(
+            query=q,
+            results=[],
+            total_results=0,
+            processing_time_ms=int((time.time() - start_time) * 1000)
+        )

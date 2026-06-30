@@ -3,6 +3,9 @@ Health check endpoints
 """
 
 from fastapi import APIRouter
+from datetime import datetime
+import psycopg2
+import os
 
 router = APIRouter()
 
@@ -33,16 +36,36 @@ async def detailed_health_check():
         Detailed health status including database, vector DB, LLM, etc.
     """
     services_status = {
-        "database": "unknown",
-        "vectordb": "unknown",
+        "database": "unhealthy",
+        "vectordb": "unhealthy",
         "llm": "unknown",
         "cache": "unknown",
     }
     
-    # TODO: Implement actual health checks for each service
+    db_url = os.getenv("DATABASE_URL")
+    if db_url and db_url.startswith("postgresql+asyncpg"):
+        db_url = db_url.replace("postgresql+asyncpg", "postgresql")
+    
+    try:
+        if db_url:
+            conn = psycopg2.connect(db_url)
+            cur = conn.cursor()
+            cur.execute("SELECT 1")
+            services_status["database"] = "healthy"
+            
+            cur.execute("SELECT extname FROM pg_extension WHERE extname = 'vector'")
+            if cur.fetchone():
+                services_status["vectordb"] = "healthy"
+            
+            cur.close()
+            conn.close()
+    except Exception as e:
+        pass
+    
+    overall_status = "healthy" if services_status["database"] == "healthy" and services_status["vectordb"] == "healthy" else "degraded"
     
     return {
-        "status": "healthy",
-        "timestamp": "2024-01-15T10:00:00Z",
+        "status": overall_status,
+        "timestamp": datetime.utcnow().isoformat(),
         "services": services_status,
     }

@@ -2,7 +2,14 @@
 Ingestion API endpoints
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
+from pydantic import BaseModel
+import os
+import shutil
+import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -18,7 +25,10 @@ class IngestResponse(BaseModel):
 
 
 @router.post("/upload", response_model=IngestResponse)
-async def upload_document(file: UploadFile = File(...)):
+async def upload_document(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...)
+):
     """
     Upload a document for ingestion.
     
@@ -34,19 +44,29 @@ async def upload_document(file: UploadFile = File(...)):
             detail="File must have a filename"
         )
     
-    # TODO: Implement actual ingestion logic
-    # 1. Validate file
-    # 2. Store temporarily
-    # 3. Queue for processing
-    # 4. Return job ID
+    job_id = str(uuid.uuid4())
+    upload_dir = os.path.join("Data", "english")
+    os.makedirs(upload_dir, exist_ok=True)
+    file_path = os.path.join(upload_dir, file.filename)
     
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
     logger.info(f"Document upload initiated: {file.filename}")
     
+    # We will simulate calling the ingestion pipeline in the background for now,
+    # or actually import and call `pipeline.main()` if we configure it correctly.
+    # To avoid blocking or complex sys.path issues, we execute the shell command.
+    def run_ingestion_pipeline():
+        os.system("python pipeline.py --no_resume")
+        
+    background_tasks.add_task(run_ingestion_pipeline)
+    
     return IngestResponse(
-        job_id="ingest_job_placeholder",
+        job_id=job_id,
         status="processing",
         filename=file.filename,
-        estimated_completion="2024-01-15T10:30:00Z"
+        estimated_completion="Processing started"
     )
 
 
