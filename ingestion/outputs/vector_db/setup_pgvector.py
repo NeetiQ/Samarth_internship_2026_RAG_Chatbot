@@ -15,8 +15,8 @@ def main():
     cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
 
     cur.execute("""
-        CREATE TABLE IF NOT EXISTS legal_embeddings (
-            id TEXT PRIMARY KEY,
+        CREATE TABLE IF NOT EXISTS legal_chunks (
+            chunk_id TEXT PRIMARY KEY,
             page_content TEXT NOT NULL,
             metadata JSONB,
             embedding VECTOR(384)

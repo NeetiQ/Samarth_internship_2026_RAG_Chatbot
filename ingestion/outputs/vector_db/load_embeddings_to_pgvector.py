@@ -37,14 +37,15 @@ def main():
 
             cur.execute(
                 """
-                INSERT INTO legal_embeddings (
-                    id,
-                    page_content,
-                    metadata,
-                    embedding
+                INSERT INTO legal_chunks (
+                chunk_id,
+                page_content,
+                metadata,
+                embedding
+            )
                 )
                 VALUES (%s, %s, %s, %s::vector)
-                ON CONFLICT (id) DO UPDATE SET
+                ON CONFLICT (chunk_id) DO UPDATE SET
                     page_content = EXCLUDED.page_content,
                     metadata = EXCLUDED.metadata,
                     embedding = EXCLUDED.embedding;
