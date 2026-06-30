@@ -1,21 +1,30 @@
 def parse_metadata(chunk):
+
+    metadata = chunk.get("metadata", {})
+
     return {
-        "doc_id": chunk.get("doc_id"),
-        "source": chunk.get("source"),
-        "page": chunk.get("page"),
-        "chunk_id": chunk.get("chunk_id"),
-        "chunk_number": chunk.get("chunk_number"),
-        "total_chunks": chunk.get("total_chunks"),
-        "ingestion_date": chunk.get("ingestion_date"),
-        "document_type": chunk.get("document_type")
+        "document_name": metadata.get(
+            "document_name",
+            "Unknown Document"
+        ),
+
+        "title": metadata.get(
+            "title",
+            "Unknown Title"
+        ),
+
+        "page": metadata.get(
+            "page",
+            "Unknown Page"
+        ),
+
+        "section": metadata.get(
+            "section",
+            "Unknown Section"
+        ),
+
+        "source": metadata.get(
+            "source",
+            "Unknown Source"
+        )
     }
-
-def validate_metadata(metadata):
-    required_fields = [
-        "doc_id",
-        "source",
-        "page",
-        "chunk_id"
-    ]
-
-    return all(metadata.get(field) is not None for field in required_fields)

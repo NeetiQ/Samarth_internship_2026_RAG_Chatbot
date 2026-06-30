@@ -1,10 +1,45 @@
-class ContextBuilder:
+def build_context(chunks):
 
-    def build_context(self, chunks):
+    context = ""
 
-        context = ""
+    for chunk in chunks:
 
-        for idx, chunk in enumerate(chunks, start=1):
-            context += f"\n[Source {idx}]\n{chunk}\n"
+        page_content = chunk.get("page_content", "")
 
-        return context
+        metadata = chunk.get("metadata", {})
+
+        document_name = metadata.get(
+            "document_name",
+            "Unknown Document"
+        )
+
+        title = metadata.get(
+            "title",
+            "Unknown Title"
+        )
+
+        page = metadata.get(
+            "page",
+            "Unknown Page"
+        )
+
+        section = metadata.get(
+            "section",
+            "Unknown Section"
+        )
+
+        source = metadata.get(
+            "source",
+            "Unknown Source"
+        )
+
+        context += (
+            f"Document: {document_name}\n"
+            f"Title: {title}\n"
+            f"Section: {section}\n"
+            f"Page: {page}\n"
+            f"Source: {source}\n\n"
+            f"{page_content}\n\n"
+        )
+
+    return context.strip()

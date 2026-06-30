@@ -1,13 +1,21 @@
-def format_citations(metadata_list):
+from rag_chat.citations.metadata_parser import parse_metadata
+
+
+def format_citations(chunks):
 
     citations = []
 
-    for metadata in metadata_list:
+    for chunk in chunks:
 
-        source = metadata.get("source", "Unknown Source")
-        page = metadata.get("page", "Unknown Page")
+        metadata = parse_metadata(chunk)
 
-        citation = f"Source: {source} | Page: {page}"
+        citation = (
+            f"Title: {metadata['title']} | "
+            f"Document: {metadata['document_name']} | "
+            f"Section: {metadata['section']} | "
+            f"Page: {metadata['page']} | "
+            f"Source: {metadata['source']}"
+        )
 
         if citation not in citations:
             citations.append(citation)
