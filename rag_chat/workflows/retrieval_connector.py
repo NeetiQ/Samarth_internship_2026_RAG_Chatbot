@@ -11,7 +11,6 @@ def retrieve_context(question, top_k=5):
     }
 
     try:
-
         response = requests.post(
             RETRIEVAL_API_URL,
             json=payload,
@@ -23,5 +22,4 @@ def retrieve_context(question, top_k=5):
         return response.json()
 
     except requests.exceptions.RequestException as e:
-
         raise Exception(f"Retrieval Service Error: {e}")

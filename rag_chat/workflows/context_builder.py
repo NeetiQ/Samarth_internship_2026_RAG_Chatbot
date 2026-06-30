@@ -2,14 +2,7 @@ def build_context(chunks):
 
     context = ""
 
-    for chunk in chunks:
-
-        source = chunk.get("source", "Unknown Source")
-        page = chunk.get("page", "Unknown Page")
-        text = chunk.get("text", "")
-
-        context += f"Source: {source}\n"
-        context += f"Page: {page}\n\n"
-        context += f"{text}\n\n"
+    for idx, chunk in enumerate(chunks, start=1):
+        context += f"[Source {idx}]\n{chunk}\n\n"
 
     return context.strip()
