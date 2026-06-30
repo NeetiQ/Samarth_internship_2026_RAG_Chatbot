@@ -75,7 +75,6 @@ data/
 temp/
 
 # Docker
-.dockerignore
 docker-compose.override.yml
 
 # OS

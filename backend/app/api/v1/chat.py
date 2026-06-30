@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from datetime import datetime
@@ -28,7 +28,18 @@ async def chat(
     history = await rag_service.get_history(request.session_id) if request.session_id else []
     context = [] # Let pipeline handle retrieval directly!
     
-    response_msg = await rag_service.generate_response(request.query, context, history)
+    try:
+        response_msg, citations = await rag_service.generate_response(request.message, context, history)
+    except HTTPException:
+        raise
+    except ValueError as e:
+        if "GEMINI_API_KEY" in str(e):
+            raise HTTPException(status_code=503, detail="GEMINI_API_KEY not configured or invalid.")
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        if "API_KEY_INVALID" in str(e) or "API key not valid" in str(e):
+             raise HTTPException(status_code=503, detail="GEMINI_API_KEY not configured or invalid.")
+        raise HTTPException(status_code=500, detail=str(e))
     
     # Return formatted response
     return ChatResponse(
@@ -39,7 +50,7 @@ async def chat(
             role=response_msg.role,
             content=response_msg.content,
             created_at=response_msg.created_at or datetime.utcnow(),
-            citations=[]
+            citations=citations
         )
     )
 

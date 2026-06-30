@@ -11,7 +11,7 @@ import {
 import MessageBubble from "./MessageBubble";
 import { useTheme } from "../../context/ThemeContext";
 
-function ChatWindow({ messages }) {
+function ChatWindow({ messages, isTyping }) {
   const { darkMode } = useTheme();
 
   const bottomRef = useRef(null);
@@ -175,8 +175,17 @@ function ChatWindow({ messages }) {
             key={message.id}
             sender={message.sender}
             text={message.text}
+            citations={message.citations}
           />
         ))}
+
+        {isTyping && (
+          <div className="flex justify-start">
+            <div className={`p-4 rounded-3xl ${darkMode ? "bg-[#1E293B] text-white" : "bg-white text-slate-800 border"}`}>
+              <span className="animate-pulse">Thinking...</span>
+            </div>
+          </div>
+        )}
 
         <div ref={bottomRef} />
       </div>

@@ -12,8 +12,8 @@ import os
 from dotenv import load_dotenv
 
 # Load environments from multiple sources before other app imports
-load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env"), override=True)
-load_dotenv(os.path.join(os.path.dirname(__file__), "../../ragchat.env"), override=True)
+load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env"), override=False)
+load_dotenv(os.path.join(os.path.dirname(__file__), "../../ragchat.env"), override=False)
 
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import SQLAlchemyError

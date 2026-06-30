@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Optional
+from typing import List
+from urllib.parse import parse_qs, unquote, urlparse
 from app.schemas.chunk import RetrievalResult
-from app.repositories import chunk_repo
 
 import sys
 import os
@@ -9,6 +9,28 @@ import os
 # Add root of the project to path for Team B's scripts
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../..")))
 from retrieval.search.retriever import Retriever
+
+DEFAULT_POSTGRES_PORT = 5432
+
+
+def apply_database_url_settings(db_url: str, settings) -> None:
+    parsed_url = urlparse(db_url)
+    query_params = parse_qs(parsed_url.query)
+
+    settings.DB_USER = unquote(parsed_url.username or "")
+    settings.DB_PASSWORD = unquote(parsed_url.password or "")
+    settings.DB_HOST = parsed_url.hostname or "localhost"
+    settings.DB_PORT = parsed_url.port or DEFAULT_POSTGRES_PORT
+    settings.DB_NAME = unquote(parsed_url.path.lstrip("/")) or "legal_rag"
+    settings.DB_SSLMODE = query_params.get(
+        "sslmode", query_params.get("ssl", [None])
+    )[0]
+    settings.DB_SSLROOTCERT = query_params.get("sslrootcert", [None])[0]
+    settings.DB_SSLCERT = query_params.get("sslcert", [None])[0]
+    settings.DB_SSLKEY = query_params.get("sslkey", [None])[0]
+    settings.DB_APPLICATION_NAME = query_params.get("application_name", [None])[0]
+    settings.DB_CONNECT_TIMEOUT = query_params.get("connect_timeout", [None])[0]
+
 
 class RetrievalService:
     def __init__(self, db: AsyncSession):
@@ -19,20 +41,18 @@ class RetrievalService:
         app_settings = get_settings()
         
         # Override DB settings for Team B's raw psycopg connection
-        # Expected URL format: postgresql+asyncpg://user:password@host:port/dbname
         db_url = app_settings.DATABASE_URL
         if db_url:
-            db_url = db_url.replace("postgresql+asyncpg://", "")
-            credentials, host_port_db = db_url.split("@")
-            user, password = credentials.split(":")
-            host_port, dbname = host_port_db.split("/")
-            host, port = host_port.split(":")
+            import urllib.parse
+            # Change postgresql+asyncpg:// to postgresql:// so urlparse handles it correctly
+            parse_url = db_url.replace("postgresql+asyncpg://", "postgresql://")
+            parsed = urllib.parse.urlparse(parse_url)
             
-            Settings.DB_USER = user
-            Settings.DB_PASSWORD = password
-            Settings.DB_HOST = host
-            Settings.DB_PORT = int(port)
-            Settings.DB_NAME = dbname
+            Settings.DB_USER = parsed.username
+            Settings.DB_PASSWORD = parsed.password
+            Settings.DB_HOST = parsed.hostname
+            Settings.DB_PORT = parsed.port if parsed.port else 5432
+            Settings.DB_NAME = parsed.path.lstrip('/')
         else:
             Settings.DB_NAME = "legal_rag"
             

@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 
-function MessageBubble({ sender, text }) {
+function MessageBubble({ sender, text, citations = [] }) {
   const { darkMode } = useTheme();
 
   const isUser = sender === "user";
@@ -34,6 +34,22 @@ function MessageBubble({ sender, text }) {
         <p className="leading-8 whitespace-pre-wrap">
           {text}
         </p>
+        {!isUser && citations.length > 0 && (
+          <div className="mt-4 space-y-2 border-t border-slate-200 pt-3 text-xs">
+            {citations.map((citation, index) => (
+              <div key={`${citation.chunk_id || index}`} className="leading-5 opacity-80">
+                <span className="font-semibold">
+                  {citation.chunk_id || `Citation ${index + 1}`}
+                </span>
+                {typeof citation.score === "number" && (
+                  <span>
+                    {` | score ${citation.score.toFixed(3)}`}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </motion.div>
   );

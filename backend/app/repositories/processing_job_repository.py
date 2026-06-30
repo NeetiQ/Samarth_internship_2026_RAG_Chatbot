@@ -9,7 +9,7 @@ class ProcessingJobRepository(BaseRepository[ProcessingJob]):
         super().__init__(ProcessingJob)
         
     async def get_by_document_id(self, db: AsyncSession, document_id: int) -> Optional[ProcessingJob]:
-        query = select(self.model).where(self.model.document_id == document_id).order_by(self.model.created_at.desc())
+        query = select(self.model).where(self.model.document_id == document_id).order_by(self.model.started_at.desc())
         result = await db.execute(query)
         return result.scalar_one_or_none()
 

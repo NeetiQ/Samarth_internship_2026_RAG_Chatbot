@@ -1,7 +1,15 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import "./Login.css";
 
 export default function Login() {
+  const navigate = useNavigate();
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    navigate("/dashboard");
+  };
+
   return (
     <div className="login-container">
 
@@ -24,13 +32,13 @@ export default function Login() {
         <div className="login-card">
           <h2>Welcome Back</h2>
 
-          <form>
+          <form onSubmit={handleLogin}>
             <input type="email" placeholder="Email Address" />
             <input type="password" placeholder="Password" />
 
             <button type="submit">Sign In</button>
 
-            <button className="google-btn" type="button">
+            <button className="google-btn" type="button" onClick={() => navigate("/dashboard")}>
               Continue with Google
             </button>
           </form>

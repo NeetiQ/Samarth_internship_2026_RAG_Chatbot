@@ -13,6 +13,7 @@ function Chat() {
   const { darkMode } = useTheme();
 
   const [messages, setMessages] = useState([]);
+  const [isTyping, setIsTyping] = useState(false);
 
   const [conversations] = useState([
     {
@@ -45,7 +46,7 @@ function Chat() {
   const [activeConversation, setActiveConversation] =
     useState(conversations[0]);
 
-  const handleSendMessage = (text) => {
+  const handleSendMessage = async (text) => {
     if (!text.trim()) return;
 
     const userMessage = {
@@ -55,16 +56,41 @@ function Chat() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    setIsTyping(true);
 
-    setTimeout(() => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      const response = await fetch(`${apiUrl}/api/v1/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, use_rag: true }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
       const aiMessage = {
         id: Date.now() + 1,
         sender: "ai",
-        text: `Based on the uploaded legal documents and precedents, here is an analysis regarding "${text}". This response is currently simulated and will later connect to your AI backend.`,
+        text: data.message?.content || "No response generated.",
+        citations: data.message?.citations || [],
       };
 
       setMessages((prev) => [...prev, aiMessage]);
-    }, 2200);
+    } catch (error) {
+      console.error("Chat error:", error);
+      const errorMessage = {
+        id: Date.now() + 1,
+        sender: "ai",
+        text: "Sorry, I encountered an error while processing your request.",
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   return (
@@ -96,7 +122,7 @@ function Chat() {
           >
             <ChatHeader />
 
-            <ChatWindow messages={messages} />
+            <ChatWindow messages={messages} isTyping={isTyping} />
 
             <ChatInput onSend={handleSendMessage} />
           </div>

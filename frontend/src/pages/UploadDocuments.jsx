@@ -58,7 +58,7 @@ function UploadDocuments() {
   // Handle uploaded files
   const handleFilesUpload = async (selectedFiles) => {
     const uploadedFiles = Array.from(selectedFiles).map((file) => ({
-      id: crypto.randomUUID(),
+      id: Date.now().toString() + Math.random().toString(36).substring(7),
       type: file.name.split(".").pop().toUpperCase(),
       name: file.name,
       size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
@@ -75,7 +75,8 @@ function UploadDocuments() {
       formData.append("file", file);
 
       try {
-        const response = await fetch("http://localhost:8000/api/v1/documents/upload", {
+        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+        const response = await fetch(`${apiUrl}/api/v1/documents/upload`, {
           method: "POST",
           body: formData,
         });

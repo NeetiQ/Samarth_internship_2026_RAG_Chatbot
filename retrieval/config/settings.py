@@ -14,6 +14,12 @@ class Settings:
     DB_NAME = os.getenv("DB_NAME", "legal_rag")
     DB_USER = os.getenv("DB_USER", "postgres")
     DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+    DB_SSLMODE = os.getenv("DB_SSLMODE")
+    DB_SSLROOTCERT = os.getenv("DB_SSLROOTCERT")
+    DB_SSLCERT = os.getenv("DB_SSLCERT")
+    DB_SSLKEY = os.getenv("DB_SSLKEY")
+    DB_APPLICATION_NAME = os.getenv("DB_APPLICATION_NAME")
+    DB_CONNECT_TIMEOUT = os.getenv("DB_CONNECT_TIMEOUT")
 
     # Embedding Model
     EMBEDDING_MODEL = os.getenv(

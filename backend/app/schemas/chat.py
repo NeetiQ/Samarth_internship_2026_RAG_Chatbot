@@ -4,10 +4,10 @@ from typing import Optional, List
 from app.models.all_models import ChatRole
 
 class CitationResponse(BaseModel):
-    chunk_id: Optional[int] = None
+    chunk_id: Optional[str] = None
     score: Optional[float] = None
     content: Optional[str] = None
-    document_id: Optional[int] = None
+    document_id: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 class ChatMessageBase(BaseModel):
