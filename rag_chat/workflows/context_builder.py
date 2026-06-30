@@ -1,10 +1,15 @@
-class ContextBuilder:
+def build_context(chunks):
 
-    def build_context(self, chunks):
+    context = ""
 
-        context = ""
+    for chunk in chunks:
 
-        for idx, chunk in enumerate(chunks, start=1):
-            context += f"\n[Source {idx}]\n{chunk}\n"
+        source = chunk.get("source", "Unknown Source")
+        page = chunk.get("page", "Unknown Page")
+        text = chunk.get("text", "")
 
-        return context
+        context += f"Source: {source}\n"
+        context += f"Page: {page}\n\n"
+        context += f"{text}\n\n"
+
+    return context.strip()
