@@ -1,35 +1,28 @@
-class RAGPipeline:
+from rag_chat.workflows.retrieval_connector import retrieve_context
+from rag_chat.workflows.context_builder import build_context
 
-    def __init__(
-        self,
-        retrieval_service,
-        prompt_service,
-        llm_service,
-        citation_service
-    ):
-        self.retrieval_service = retrieval_service
-        self.prompt_service = prompt_service
-        self.llm_service = llm_service
-        self.citation_service = citation_service
+from rag_chat.prompts.prompt_builder import build_prompt
+from rag_chat.llm.gemini_client import generate_response
+from rag_chat.citations.citation_formatter import format_citations
 
-    def process_query(self, query):
 
-        retrieved_data = self.retrieval_service.retrieve(query)
+def process_query(question, history=None):
 
-        chunks = retrieved_data.get("chunks", [])
+    retrieved_data = retrieve_context(question)
 
-        prompt = self.prompt_service.build_prompt(
-            query=query,
-            chunks=chunks
-        )
+    context = build_context(retrieved_data)
 
-        answer = self.llm_service.generate(prompt)
+    prompt = build_prompt(
+        question=question,
+        context=context,
+        history=history
+    )
 
-        citations = self.citation_service.generate(
-            retrieved_data
-        )
+    answer = generate_response(prompt)
 
-        return {
-            "answer": answer,
-            "citations": citations
-        }
+    citations = format_citations(retrieved_data)
+
+    return {
+        "answer": answer,
+        "citations": citations
+    }
