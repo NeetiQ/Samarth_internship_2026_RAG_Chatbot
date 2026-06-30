@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 import sys
 import time
 import json
@@ -174,15 +175,39 @@ def sync_pkl_from_jsonl(jsonl_path: str, pkl_path: str):
     print(f"Successfully synchronized {len(documents)} LangChain Document objects to {pkl_path}")
 
 def main():
-    parser = argparse.ArgumentParser(description="Legal RAG Ingestion Pipeline")
-    parser.add_argument("--metadata_path", type=str, default=r"C:\Users\krish\Downloads\metadata.parquet",
-                        help="Path to metadata.parquet")
-    parser.add_argument("--pdf_dir", type=str, default=r"C:\Users\krish\Downloads\english",
-                        help="Directory containing judgment PDFs")
-    parser.add_argument("--output_dir", type=str, default=".",
-                        help="Output directory to save reports and documents")
-    parser.add_argument("--num_processes", type=int, default=os.cpu_count(),
-                        help="Number of parallel processes")
+    load_dotenv()
+
+    parser = argparse.ArgumentParser(
+        description="Legal RAG Ingestion Pipeline"
+    )
+    parser.add_argument(
+    "--metadata_path",
+    type=str,
+    default=os.getenv("METADATA_PATH", "Data/metadata.parquet"),
+    help="Path to metadata.parquet"
+    )
+
+    parser.add_argument(
+    "--pdf_dir",
+    type=str,
+    default=os.getenv("PDF_DIR", "Data/english"),
+    help="Directory containing judgment PDFs"
+    )
+
+    parser.add_argument(
+    "--output_dir",
+    type=str,
+    default=os.getenv("OUTPUT_DIR", "output"),
+    help="Output directory to save reports and documents"
+    )
+
+    parser.add_argument(
+    "--num_processes",
+    type=int,
+    default=int(os.getenv("NUM_PROCESSES", os.cpu_count())),
+    help="Number of parallel processes"
+    )
+    
     parser.add_argument("--no_resume", action="store_true",
                         help="Disable resuming and overwrite existing outputs")
     
