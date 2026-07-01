@@ -2,8 +2,8 @@ import json
 from sentence_transformers import SentenceTransformer
 
 
-INPUT_FILE = "data/data.jsonl"
-OUTPUT_FILE = "data/embedded_documents.jsonl"
+INPUT_FILE = "chunked_documents.jsonl"
+OUTPUT_FILE = "embedded_documents.jsonl"
 
 MODEL_NAME = "BAAI/bge-small-en-v1.5"
 BATCH_SIZE = 32

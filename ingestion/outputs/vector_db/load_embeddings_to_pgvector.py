@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-INPUT_FILE = "data/embedded_documents.jsonl"
+INPUT_FILE = "embedded_documents.jsonl"
 
 
 def vector_to_sql(embedding):
@@ -42,7 +42,6 @@ def main():
                 page_content,
                 metadata,
                 embedding
-            )
                 )
                 VALUES (%s, %s, %s, %s::vector)
                 ON CONFLICT (chunk_id) DO UPDATE SET
