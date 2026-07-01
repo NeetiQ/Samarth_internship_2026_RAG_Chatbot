@@ -49,6 +49,7 @@ ragchat.env
 TeamA_TeamB_Merged.env
 
 # Generated data artifacts
+*.jsonl
 embedded_documents.jsonl
 chunked_documents.jsonl
 documents.jsonl
