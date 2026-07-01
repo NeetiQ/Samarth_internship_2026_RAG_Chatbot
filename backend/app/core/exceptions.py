@@ -32,6 +32,7 @@ async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
 
 async def general_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unexpected error: {str(exc)}")
+    import traceback; traceback.print_exc()
     return JSONResponse(
         status_code=500,
         content={"error": "Internal Server Error", "message": "An unexpected error occurred."},

@@ -7,6 +7,7 @@ import UploadDropzone from "../components/upload/UploadDropzone";
 import UploadedDocuments from "../components/upload/UploadedDocuments";
 
 import { useTheme } from "../context/ThemeContext";
+import { authFetch } from "../services/api";
 
 function UploadDocuments() {
   const { darkMode } = useTheme();
@@ -75,8 +76,7 @@ function UploadDocuments() {
       formData.append("file", file);
 
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
-        const response = await fetch(`${apiUrl}/api/v1/documents/upload`, {
+        const response = await authFetch("/api/v1/documents/upload", {
           method: "POST",
           body: formData,
         });

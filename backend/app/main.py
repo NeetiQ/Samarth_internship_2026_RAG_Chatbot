@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from app.core.settings import get_settings
 from app.core.exceptions import (
     AppException,
@@ -13,11 +14,11 @@ from dotenv import load_dotenv
 
 # Load environments from multiple sources before other app imports
 load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env"), override=False)
-load_dotenv(os.path.join(os.path.dirname(__file__), "../../ragchat.env"), override=False)
 
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from app.api.v1 import api_router
+from app.database.session import engine
 settings = get_settings()
 
 def create_app() -> FastAPI:
@@ -49,6 +50,22 @@ def create_app() -> FastAPI:
     @app.get("/health", tags=["System"])
     async def health_check():
         return {"status": "ok", "project": settings.PROJECT_NAME}
+
+    @app.get("/ready", tags=["System"])
+    async def readiness_check():
+        try:
+            async with engine.connect() as conn:
+                await conn.execute(text("SELECT 1"))
+                result = await conn.execute(
+                    text("SELECT extname FROM pg_extension WHERE extname = 'vector'")
+                )
+                if not result.fetchone():
+                    raise HTTPException(status_code=503, detail="PGVector extension not loaded")
+            return {"status": "ready", "project": settings.PROJECT_NAME}
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(status_code=503, detail="Database not ready")
 
     return app
 

@@ -28,5 +28,7 @@ ENV PYTHONPATH=/app/backend:/app
 # Expose port
 EXPOSE 8000
 
-# Command to run the application (running from root directory to allow imports)
-CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+COPY backend/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

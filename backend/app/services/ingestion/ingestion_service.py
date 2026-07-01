@@ -10,13 +10,21 @@ from text_cleaner import clean_document
 
 from app.repositories import job_repo, document_repo, chunk_repo
 from app.models.all_models import ProcessingStage
+from app.database.session import AsyncSessionLocal
 import asyncio
 
 class IngestionService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def process_document_background(self, document_id: int):
+    @classmethod
+    async def process_document_background(cls, document_id: int):
+        """Runs the real-time ingestion pipeline with its own DB session."""
+        async with AsyncSessionLocal() as db:
+            service = cls(db)
+            await service._process_document(document_id)
+
+    async def _process_document(self, document_id: int):
         """Runs the real-time ingestion pipeline asynchronously."""
         job = await job_repo.get_by_document_id(self.db, document_id)
         if not job:

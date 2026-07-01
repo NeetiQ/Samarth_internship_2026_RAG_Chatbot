@@ -43,6 +43,16 @@ venv.bak/
 .env
 .env.local
 .env.*.local
+frontend/.env
+frontend/.env.local
+ragchat.env
+TeamA_TeamB_Merged.env
+
+# Generated data artifacts
+embedded_documents.jsonl
+chunked_documents.jsonl
+documents.jsonl
+output/
 
 # Node
 node_modules/

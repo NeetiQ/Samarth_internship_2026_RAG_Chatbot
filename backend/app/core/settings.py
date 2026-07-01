@@ -27,17 +27,29 @@ class Settings(BaseSettings):
     OCR_LANGUAGE: str = "en"
     
     # Embeddings & Retrieval
-    EMBEDDING_MODEL_NAME: str = "BAAI/bge-m3"
-    EMBEDDING_DIMENSION: int = 1024
+    EMBEDDING_MODEL_NAME: str = "BAAI/bge-small-en-v1.5"
+    EMBEDDING_DIMENSION: int = 384
     RETRIEVAL_TOP_K: int = 5
-    RERANKER_MODEL_NAME: str = "BAAI/bge-reranker-v2-m3"
+    RERANKER_MODEL_NAME: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
     RERANKER_TOP_K: int = 3
     
     # LLM
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-1.5-pro"
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+    
+    # Corpus seeding (deployment)
+    SEED_CORPUS: bool = True
+    CHUNKED_DOCUMENTS_PATH: str = "./chunked_documents.jsonl"
+    EMBEDDED_DOCUMENTS_PATH: str = "./embedded_documents.jsonl"
+    GENERATE_EMBEDDINGS_ON_SEED: bool = False
+    
+    # JWT / Auth
+    SECRET_KEY: str = "CHANGE-ME-IN-PRODUCTION"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=True, extra="ignore")
+
 
 @lru_cache()
 def get_settings():

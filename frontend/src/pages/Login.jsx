@@ -1,13 +1,37 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import "./Login.css";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login, signup } = useAuth();
 
-  const handleLogin = (e) => {
+  const [isSignup, setIsSignup] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate("/dashboard");
+    setError("");
+    setLoading(true);
+
+    try {
+      if (isSignup) {
+        await signup(email, password, fullName);
+      } else {
+        await login(email, password);
+      }
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.message || "Authentication failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -30,21 +54,56 @@ export default function Login() {
         </div>
 
         <div className="login-card">
-          <h2>Welcome Back</h2>
+          <h2>{isSignup ? "Create Account" : "Welcome Back"}</h2>
 
-          <form onSubmit={handleLogin}>
-            <input type="email" placeholder="Email Address" />
-            <input type="password" placeholder="Password" />
+          {error && (
+            <div style={{
+              color: "#dc2626",
+              background: "#fef2f2",
+              padding: "10px 14px",
+              borderRadius: "8px",
+              marginBottom: "16px",
+              fontSize: "14px",
+            }}>
+              {error}
+            </div>
+          )}
 
-            <button type="submit">Sign In</button>
+          <form onSubmit={handleSubmit}>
+            {isSignup && (
+              <input
+                type="text"
+                placeholder="Full Name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
+            )}
+            <input
+              type="email"
+              placeholder="Email Address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+            />
 
-            <button className="google-btn" type="button" onClick={() => navigate("/dashboard")}>
-              Continue with Google
+            <button type="submit" disabled={loading}>
+              {loading ? "Please wait..." : isSignup ? "Create Account" : "Sign In"}
             </button>
           </form>
 
           <p className="signup-link">
-            Don't have an account? <span>Sign Up</span>
+            {isSignup ? "Already have an account? " : "Don't have an account? "}
+            <span onClick={() => { setIsSignup(!isSignup); setError(""); }}>
+              {isSignup ? "Sign In" : "Sign Up"}
+            </span>
           </p>
         </div>
       </motion.div>

@@ -1,13 +1,18 @@
 import os
 import json
-import psycopg2
+import sys
+from pathlib import Path
+
+import psycopg
 from dotenv import load_dotenv
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+load_dotenv(REPO_ROOT / ".env")
 
-load_dotenv()
-
-DATABASE_URL = os.getenv("DATABASE_URL")
-INPUT_FILE = "data/embedded_documents.jsonl"
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/legal_rag").replace(
+    "postgresql+asyncpg://", "postgresql://"
+)
+INPUT_FILE = Path(os.getenv("EMBEDDED_DOCUMENTS_PATH", REPO_ROOT / "embedded_documents.jsonl"))
 
 
 def vector_to_sql(embedding):
@@ -15,12 +20,17 @@ def vector_to_sql(embedding):
 
 
 def main():
-    conn = psycopg2.connect(DATABASE_URL)
+    if not INPUT_FILE.is_file():
+        print(f"Input file not found: {INPUT_FILE}", file=sys.stderr)
+        print("Run: python backend/scripts/generate_embeddings.py", file=sys.stderr)
+        return 1
+
+    conn = psycopg.connect(DATABASE_URL)
     cur = conn.cursor()
 
     inserted = 0
 
-    with open(INPUT_FILE, "r", encoding="utf-8") as file:
+    with INPUT_FILE.open("r", encoding="utf-8") as file:
         for line in file:
             if not line.strip():
                 continue
@@ -28,7 +38,7 @@ def main():
             record = json.loads(line)
 
             page_content = record["page_content"]
-            metadata = record["metadata"]
+            metadata = record.get("metadata", {})
             embedding = record["embedding"]
             chunk_id = metadata.get("chunk_id")
 
@@ -38,13 +48,12 @@ def main():
             cur.execute(
                 """
                 INSERT INTO legal_chunks (
-                chunk_id,
-                page_content,
-                metadata,
-                embedding
-            )
+                    chunk_id,
+                    page_content,
+                    metadata,
+                    embedding
                 )
-                VALUES (%s, %s, %s, %s::vector)
+                VALUES (%s, %s, %s::jsonb, %s::vector)
                 ON CONFLICT (chunk_id) DO UPDATE SET
                     page_content = EXCLUDED.page_content,
                     metadata = EXCLUDED.metadata,
@@ -70,7 +79,8 @@ def main():
     conn.close()
 
     print(f"Done. Total records loaded: {inserted}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Sidebar from "../components/layout/Sidebar";
 import Navbar from "../components/layout/Navbar";
+import { authFetch } from "../services/api";
 
 import ConversationList from "../components/chat/ConversationList";
 import ChatHeader from "../components/chat/ChatHeader";
@@ -59,10 +60,8 @@ function Chat() {
     setIsTyping(true);
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
-      const response = await fetch(`${apiUrl}/api/v1/chat`, {
+      const response = await authFetch("/api/v1/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text, use_rag: true }),
       });
 

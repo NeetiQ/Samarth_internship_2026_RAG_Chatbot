@@ -14,3 +14,6 @@ from app.schemas.processing import (
     ProcessingJobBase, ProcessingJobResponse
 )
 from app.schemas.common import MessageResponse, ErrorResponse
+from app.schemas.auth import (
+    SignupRequest, LoginRequest, TokenResponse, UserResponse
+)
