@@ -9,7 +9,9 @@ from app.core.exceptions import (
     sqlalchemy_exception_handler,
     general_exception_handler,
 )
+import logging
 import os
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 
 # Load environments from multiple sources before other app imports
@@ -20,6 +22,29 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.api.v1 import api_router
 from app.database.session import engine
 settings = get_settings()
+
+logger = logging.getLogger("legal-rag")
+
+
+def _detect_provider(hostname: str) -> str:
+    """Detect cloud database provider from the hostname."""
+    provider_hints = {
+        "render.com": "Render",
+        "neon.tech": "Neon",
+        "supabase.co": "Supabase",
+        "amazonaws.com": "AWS RDS",
+        "azure.com": "Azure",
+        "cloudsql": "Google Cloud SQL",
+        "elephantsql.com": "ElephantSQL",
+        "aiven.io": "Aiven",
+    }
+    for hint, name in provider_hints.items():
+        if hint in hostname:
+            return name
+    if hostname in ("localhost", "127.0.0.1", "db"):
+        return "Local / Docker"
+    return "Unknown"
+
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -47,6 +72,30 @@ def create_app() -> FastAPI:
     # Include routers
     app.include_router(api_router, prefix=settings.API_V1_STR)
 
+    @app.on_event("startup")
+    async def log_deployment_info():
+        """Log deployment configuration on startup (never logs passwords)."""
+        try:
+            parsed = urlparse(settings.DATABASE_URL)
+            db_host = parsed.hostname or "unknown"
+            db_port = parsed.port or 5432
+            db_name = (parsed.path or "").lstrip("/") or "unknown"
+            ssl_enabled = "sslmode" in (parsed.query or "")
+            provider = _detect_provider(db_host)
+
+            logger.info("=" * 60)
+            logger.info("DEPLOYMENT CONFIGURATION")
+            logger.info("=" * 60)
+            logger.info(f"  Environment : {settings.ENVIRONMENT}")
+            logger.info(f"  DB Host     : {db_host}:{db_port}")
+            logger.info(f"  DB Name     : {db_name}")
+            logger.info(f"  DB Provider : {provider}")
+            logger.info(f"  SSL Enabled : {ssl_enabled}")
+            logger.info(f"  Debug Mode  : {settings.DEBUG}")
+            logger.info("=" * 60)
+        except Exception as e:
+            logger.warning(f"Could not log deployment info: {e}")
+
     @app.get("/health", tags=["System"])
     async def health_check():
         return {"status": "ok", "project": settings.PROJECT_NAME}
@@ -70,3 +119,4 @@ def create_app() -> FastAPI:
     return app
 
 app = create_app()
+

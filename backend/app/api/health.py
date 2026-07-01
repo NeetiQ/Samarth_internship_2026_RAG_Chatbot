@@ -5,11 +5,8 @@ Health check endpoints
 from fastapi import APIRouter
 from datetime import datetime
 import psycopg2
-import os
 
 router = APIRouter()
-
-# TODO: Add health check endpoints
 
 
 @router.get("")
@@ -42,24 +39,28 @@ async def detailed_health_check():
         "cache": "unknown",
     }
     
-    db_url = os.getenv("DATABASE_URL")
-    if db_url and db_url.startswith("postgresql+asyncpg"):
-        db_url = db_url.replace("postgresql+asyncpg", "postgresql")
+    from app.core.settings import get_settings
+    settings = get_settings()
+    # Use the centralized, validated DATABASE_URL from settings.
+    # Rewrite the asyncpg dialect to the synchronous postgresql dialect
+    # that psycopg2 expects.
+    db_url = settings.DATABASE_URL
+    if db_url.startswith("postgresql+asyncpg"):
+        db_url = db_url.replace("postgresql+asyncpg", "postgresql", 1)
     
     try:
-        if db_url:
-            conn = psycopg2.connect(db_url)
-            cur = conn.cursor()
-            cur.execute("SELECT 1")
-            services_status["database"] = "healthy"
-            
-            cur.execute("SELECT extname FROM pg_extension WHERE extname = 'vector'")
-            if cur.fetchone():
-                services_status["vectordb"] = "healthy"
-            
-            cur.close()
-            conn.close()
-    except Exception as e:
+        conn = psycopg2.connect(db_url)
+        cur = conn.cursor()
+        cur.execute("SELECT 1")
+        services_status["database"] = "healthy"
+        
+        cur.execute("SELECT extname FROM pg_extension WHERE extname = 'vector'")
+        if cur.fetchone():
+            services_status["vectordb"] = "healthy"
+        
+        cur.close()
+        conn.close()
+    except Exception:
         pass
     
     overall_status = "healthy" if services_status["database"] == "healthy" and services_status["vectordb"] == "healthy" else "degraded"

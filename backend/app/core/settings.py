@@ -1,19 +1,45 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator, ValidationInfo
 from functools import lru_cache
-from typing import List
+from typing import List, Optional
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Legal RAG API"
     API_V1_STR: str = "/api/v1"
     DEBUG: bool = True
+    ENVIRONMENT: str = "development"
     
     # Database
-    POSTGRES_SERVER: str = "localhost"
-    POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str = "postgres"
-    POSTGRES_DB: str = "legal_rag"
-    POSTGRES_PORT: int = 5432
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/legal_rag"
+    POSTGRES_SERVER: Optional[str] = None
+    POSTGRES_USER: Optional[str] = None
+    POSTGRES_PASSWORD: Optional[str] = None
+    POSTGRES_DB: Optional[str] = None
+    POSTGRES_PORT: Optional[int] = None
+    
+    # Database URL has no default; it is required.
+    DATABASE_URL: str
+    
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def validate_database_url(cls, v: Optional[str], info: ValidationInfo) -> str:
+        if not v:
+            raise ValueError("DATABASE_URL environment variable is missing. A valid database connection string is required.")
+        
+        env = info.data.get("ENVIRONMENT", "production")
+        if env == "production":
+            if "localhost" in v or "127.0.0.1" in v:
+                raise ValueError("Production environment should never connect to localhost.")
+            if "postgres:postgres@" in v:
+                raise ValueError("Production environment should never use default development credentials.")
+        
+        # Cloud providers often inject postgres:// or postgresql:// natively. 
+        # We rewrite it to the asyncpg dialect required by SQLAlchemy.
+        if v.startswith("postgres://"):
+            v = v.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif v.startswith("postgresql://"):
+            v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+            
+        return v
     
     # Storage
     STORAGE_DIR: str = "./data/uploads"

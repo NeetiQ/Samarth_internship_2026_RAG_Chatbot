@@ -20,7 +20,12 @@ BATCH_SIZE = int(os.getenv("SEED_BATCH_SIZE", "500"))
 
 
 def sync_database_url() -> str:
-    url = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/legal_rag")
+    url = os.getenv("DATABASE_URL")
+    if not url:
+        raise ValueError("DATABASE_URL environment variable is missing.")
+    if os.getenv("ENVIRONMENT", "production") == "production":
+        if "localhost" in url or "127.0.0.1" in url:
+            raise ValueError("Production environment should never connect to localhost.")
     return url.replace("postgresql+asyncpg://", "postgresql://")
 
 
