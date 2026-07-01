@@ -1,11 +1,13 @@
 """
-Test for loading Team A's JSONL dataset.
+Test for loading Team A's JSONL dataset
+and verifying the embedding pipeline.
 """
 
+from retrieval.embeddings.embedder import Embedder
 from retrieval.pipelines.json_loader import JSONLoader
 
-# TODO: Update this path according to your project structure
-FILE_PATH = "path/to/chunked_documents.jsonl"
+# Team A output file
+FILE_PATH = "chunked_documents.jsonl"
 
 
 def main():
@@ -18,11 +20,20 @@ def main():
     first_doc = documents[0]
 
     print("\nFirst Chunk:\n")
-    print(first_doc["page_content"])
+    print(first_doc["page_content"][:300] + "...")
 
     print("\nMetadata:\n")
     for key, value in first_doc["metadata"].items():
         print(f"{key}: {value}")
+
+    print("\nGenerating embedding...\n")
+
+    embedder = Embedder()
+
+    embedding = embedder.encode(first_doc["page_content"])
+
+    print(f"Embedding Dimension : {len(embedding)}")
+    print("Embedding generated successfully.")
 
 
 if __name__ == "__main__":

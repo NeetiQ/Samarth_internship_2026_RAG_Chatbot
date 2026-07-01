@@ -56,6 +56,8 @@ build/
 htmlcov/
 .pytest_cache/
 .tox/
+embedded_documents.jsonl
+chunked_documents.jsonl
 
 # Ingestion outputs
 ingestion/outputs/chunks/*

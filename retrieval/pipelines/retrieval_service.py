@@ -4,62 +4,72 @@ Retrieval service for indexing documents.
 
 from retrieval.embeddings.embedder import Embedder
 from retrieval.pipelines.json_loader import JSONLoader
-from retrieval.vectordb.pgvector_store import PGVectorStore
+from retrieval.vectordb.pinecone_store import PineconeStore
 
 
 class RetrievalService:
-    """
-    Handles document ingestion and indexing.
-    """
 
     def __init__(self):
         self.embedder = Embedder()
+        self.vector_store = PineconeStore()
 
     def ingest_documents(self, jsonl_path: str):
-        """
-        Load documents and generate embeddings.
-
-        Args:
-            jsonl_path (str): Path to the JSONL file.
-
-        Returns:
-            list: Documents with embeddings.
-        """
 
         documents = JSONLoader.load(jsonl_path)
 
-        indexed_documents = []
+        batch_size = 64
+        vectors = []
 
-        for document in documents:
+        print(f"Total Documents: {len(documents)}")
 
-            embedding = self.embedder.encode(
-                document.get("page_content", "")
+        for i in range(0, len(documents), batch_size):
+
+            batch = documents[i:i + batch_size]
+
+            texts = [
+                doc["page_content"]
+                for doc in batch
+            ]
+
+            embeddings = self.embedder.encode_batch(texts)
+
+            for document, embedding in zip(batch, embeddings):
+
+                vectors.append(
+                    {
+                        "id": document["metadata"]["chunk_id"],
+                        "values": embedding,
+                        "metadata": {
+                            **document["metadata"],
+                            "page_content": document["page_content"],
+                        },
+                    }
+                )
+
+            print(
+                f"Embeddings Generated: "
+                f"{min(i + batch_size, len(documents))}/{len(documents)}"
             )
 
-            indexed_documents.append(
-                {
-                    "chunk_id": document["metadata"]["chunk_id"],
-                    "page_content": document.get("page_content", ""),
-                    "metadata": document["metadata"],
-                    "embedding": embedding,
-                }
-            )
-
-        return indexed_documents
+        return vectors
 
     def index_documents(self, jsonl_path: str):
-        """
-        Generate embeddings and store them in PGVector.
 
-        Args:
-            jsonl_path (str): Path to the JSONL file.
+        vectors = self.ingest_documents(jsonl_path)
 
-        Returns:
-            list: Indexed documents.
-        """
+        upsert_batch = 500
 
-        documents = self.ingest_documents(jsonl_path)
+        for i in range(0, len(vectors), upsert_batch):
 
-        PGVectorStore.insert_embeddings(documents)
+            self.vector_store.upsert(
+                vectors[i:i + upsert_batch]
+            )
 
-        return documents
+            print(
+                f"Uploaded: "
+                f"{min(i + upsert_batch, len(vectors))}/{len(vectors)}"
+            )
+
+        print("\nIndexing Completed Successfully.")
+
+        return vectors
