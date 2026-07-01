@@ -1,5 +1,5 @@
-CHUNK_SIZE = 1000
-CHUNK_OVERLAP = 200
+CHUNK_SIZE = 600
+CHUNK_OVERLAP = 100
 
-INPUT_FILE = "../documents.jsonl"
-OUTPUT_FILE = "../chunked_documents.jsonl"
+INPUT_FILE = "documents.jsonl"
+OUTPUT_FILE = "chunked_documents_new.jsonl"

@@ -1,6 +1,5 @@
 import json
 import logging
-
 from typing import List
 
 try:
@@ -27,6 +26,17 @@ class DocumentChunker:
             chunk_size=CHUNK_SIZE,
             chunk_overlap=CHUNK_OVERLAP,
             separators=[
+                "\nIssue for Consideration",
+                "\nHeadnotes",
+                "\nJUDGMENT",
+                "\nJudgment",
+                "\nORDER",
+                "\nOrder",
+                "\nFacts",
+                "\nFACTS",
+                "\nAnalysis",
+                "\nReasoning",
+                "\nHeld",
                 "\n\n",
                 "\n",
                 ". ",
@@ -39,21 +49,21 @@ class DocumentChunker:
 
         documents = []
 
-        with open(jsonl_path, "r", encoding="utf-8") as f:
+        with open(jsonl_path, "r", encoding="utf-8") as file:
 
-            for line in f:
+            for line in file:
 
                 if not line.strip():
                     continue
 
                 data = json.loads(line)
 
-                doc = Document(
-                    page_content=data["page_content"],
-                    metadata=data["metadata"]
+                documents.append(
+                    Document(
+                        page_content=data["page_content"],
+                        metadata=data["metadata"]
+                    )
                 )
-
-                documents.append(doc)
 
         logger.info(f"Loaded {len(documents)} documents")
 
@@ -65,9 +75,7 @@ class DocumentChunker:
 
         for doc in documents:
 
-            chunks = self.splitter.split_text(
-                doc.page_content
-            )
+            chunks = self.splitter.split_text(doc.page_content)
 
             case_id = doc.metadata.get(
                 "case_id",
@@ -88,29 +96,18 @@ class DocumentChunker:
 
                 metadata = dict(doc.metadata)
 
-                metadata["chunk_id"] = (
-                    f"{case_id}_{idx}"
-                )
-
+                metadata["chunk_id"] = f"{case_id}_{idx}"
                 metadata["doc_id"] = case_id
-
                 metadata["source"] = source
-
                 metadata["chunk_index"] = idx
-
                 metadata["total_chunks"] = total_chunks
-
-                metadata["chunk_length"] = len(
-                    chunk_text
-                )
-
-                chunk_doc = Document(
-                    page_content=chunk_text,
-                    metadata=metadata
-                )
+                metadata["chunk_length"] = len(chunk_text)
 
                 chunked_documents.append(
-                    chunk_doc
+                    Document(
+                        page_content=chunk_text,
+                        metadata=metadata
+                    )
                 )
 
         logger.info(
@@ -129,7 +126,7 @@ class DocumentChunker:
             output_file,
             "w",
             encoding="utf-8"
-        ) as f:
+        ) as file:
 
             for doc in chunked_docs:
 
@@ -138,7 +135,7 @@ class DocumentChunker:
                     "metadata": doc.metadata
                 }
 
-                f.write(
+                file.write(
                     json.dumps(
                         record,
                         ensure_ascii=False
@@ -146,5 +143,5 @@ class DocumentChunker:
                 )
 
         logger.info(
-            f"Saved chunks to {output_file}"
+            f"Saved {len(chunked_docs)} chunks to {output_file}"
         )
