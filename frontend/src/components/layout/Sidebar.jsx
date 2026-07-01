@@ -3,7 +3,6 @@ import {
   FiMessageSquare,
   FiFileText,
   FiSettings,
-  FiUpload,
 } from "react-icons/fi";
 
 import { NavLink } from "react-router-dom";
@@ -29,7 +28,9 @@ function Sidebar() {
           : "bg-white border-slate-200"
       }`}
     >
-      <h1 className="text-3xl font-bold text-blue-600">⚖️ NyayaAI</h1>
+      <h1 className="text-3xl font-bold text-blue-600">
+        ⚖️ NyayaAI
+      </h1>
 
       <div className="mt-10 space-y-2">
         <NavLink to="/dashboard" className={navItemClass}>
@@ -38,10 +39,6 @@ function Sidebar() {
 
         <NavLink to="/chat" className={navItemClass}>
           <FiMessageSquare /> Chat
-        </NavLink>
-
-        <NavLink to="/upload-documents" className={navItemClass}>
-          <FiUpload /> Upload
         </NavLink>
 
         <NavLink to="/compare" className={navItemClass}>

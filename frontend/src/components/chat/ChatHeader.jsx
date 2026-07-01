@@ -4,8 +4,65 @@ import {
   FiMoreVertical,
   FiShield,
 } from "react-icons/fi";
+import { jsPDF } from "jspdf";
 
-function ChatHeader() {
+function ChatHeader({ messages }) {
+  const exportChat = () => {
+    const doc = new jsPDF();
+
+    doc.setFontSize(22);
+    doc.text("NyayaAI", 20, 20);
+
+    doc.setFontSize(14);
+    doc.text("Legal Chat Report", 20, 30);
+
+    doc.setFontSize(10);
+    doc.text(
+      `Generated: ${new Date().toLocaleString()}`,
+      20,
+      38
+    );
+
+    let y = 50;
+
+    if (messages.length === 0) {
+      doc.setFontSize(12);
+      doc.text("No conversation available.", 20, y);
+    } else {
+      messages.forEach((msg) => {
+        const sender =
+          msg.sender === "user" ? "User" : "NyayaAI";
+
+        doc.setFontSize(12);
+        doc.setFont(undefined, "bold");
+        doc.text(`${sender}:`, 20, y);
+
+        y += 8;
+
+        doc.setFont(undefined, "normal");
+
+        const lines = doc.splitTextToSize(
+          msg.text,
+          170
+        );
+
+        doc.text(lines, 20, y);
+
+        y += lines.length * 7 + 8;
+
+        // New page if needed
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+      });
+    }
+
+    const date = new Date().toLocaleDateString("en-GB").replace(/\//g, "-");
+
+    doc.save(`NyayaAI_Chat_${date}.pdf`);
+  };
+
   return (
     <motion.div
       initial={{
@@ -43,7 +100,10 @@ function ChatHeader() {
       {/* Right */}
 
       <div className="flex items-center gap-3">
-        <button className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition text-sm">
+        <button
+          onClick={exportChat}
+          className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition text-sm"
+        >
           <FiDownload size={16} />
           Export
         </button>
