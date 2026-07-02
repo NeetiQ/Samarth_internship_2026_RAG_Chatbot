@@ -7,7 +7,6 @@ most relevant document chunks from PGVector.
 
 from retrieval.config.settings import Settings
 from retrieval.embeddings.embedder import Embedder
-from retrieval.vectordb.pgvector_store import PGVectorStore
 
 
 class Retriever:
@@ -39,7 +38,8 @@ class Retriever:
 
         query_embedding = self.embedder.encode(query)
 
-        results = PGVectorStore.search(
+        from backend.app.services.vector.pinecone_service import PineconeService
+        results = PineconeService.query_vectors(
             query_embedding=query_embedding,
             top_k=top_k,
         )

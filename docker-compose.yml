@@ -20,6 +20,9 @@ services:
       CHUNKED_DOCUMENTS_PATH: /app/data/corpus/chunked_documents.jsonl
       EMBEDDED_DOCUMENTS_PATH: /app/data/corpus/embedded_documents.jsonl
       GENERATE_EMBEDDINGS_ON_SEED: ${GENERATE_EMBEDDINGS_ON_SEED:-false}
+      PINECONE_API_KEY: ${PINECONE_API_KEY}
+      PINECONE_INDEX: ${PINECONE_INDEX}
+      PINECONE_NAMESPACE: ${PINECONE_NAMESPACE:-default}
     depends_on:
       db:
         condition: service_healthy
@@ -50,7 +53,7 @@ services:
     restart: unless-stopped
 
   db:
-    image: pgvector/pgvector:pg16
+    image: postgres:16
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}

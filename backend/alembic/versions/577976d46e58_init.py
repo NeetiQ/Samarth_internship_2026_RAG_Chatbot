@@ -9,7 +9,6 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-import pgvector
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
@@ -57,7 +56,7 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_chat_messages_id'), 'chat_messages', ['id'], unique=False)
     
-    op.execute('CREATE EXTENSION IF NOT EXISTS vector;')
+    # op.execute('CREATE EXTENSION IF NOT EXISTS vector;')  # Removed PGVector
     
     op.create_table('legal_chunks',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -65,7 +64,7 @@ def upgrade() -> None:
         sa.Column('document_id', sa.Integer(), nullable=True),
         sa.Column('page_content', sa.Text(), nullable=False),
         sa.Column('metadata', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-        sa.Column('embedding', pgvector.sqlalchemy.vector.VECTOR(dim=384), nullable=True),
+        sa.Column('pinecone_vector_id', sa.String(length=255), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(['document_id'], ['documents.id'], name=op.f('fk_legal_chunks_document_id_documents'), ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id', name=op.f('pk_legal_chunks'))
@@ -123,7 +122,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_legal_chunks_chunk_id'), table_name='legal_chunks')
     op.drop_table('legal_chunks')
     
-    op.execute('DROP EXTENSION IF EXISTS vector;')
+    # op.execute('DROP EXTENSION IF EXISTS vector;')  # Removed PGVector
     
     op.drop_index(op.f('ix_chat_messages_id'), table_name='chat_messages')
     op.drop_table('chat_messages')

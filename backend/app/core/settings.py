@@ -59,6 +59,20 @@ class Settings(BaseSettings):
     RERANKER_MODEL_NAME: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
     RERANKER_TOP_K: int = 3
     
+    # Pinecone Vector DB
+    PINECONE_API_KEY: str
+    PINECONE_INDEX: str
+    PINECONE_NAMESPACE: str = "default"
+    PINECONE_CLOUD: str = "aws"
+    PINECONE_REGION: str = "us-east-1"
+    
+    @field_validator("PINECONE_API_KEY", mode="before")
+    @classmethod
+    def validate_pinecone_api_key(cls, v: Optional[str]) -> str:
+        if not v:
+            raise ValueError("PINECONE_API_KEY environment variable is required.")
+        return v
+    
     # LLM
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-2.5-flash"

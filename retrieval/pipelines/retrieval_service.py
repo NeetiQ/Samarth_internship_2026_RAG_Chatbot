@@ -4,7 +4,6 @@ Retrieval service for indexing documents.
 
 from retrieval.embeddings.embedder import Embedder
 from retrieval.pipelines.json_loader import JSONLoader
-from retrieval.vectordb.pgvector_store import PGVectorStore
 
 
 class RetrievalService:
@@ -38,10 +37,12 @@ class RetrievalService:
 
             indexed_documents.append(
                 {
-                    "chunk_id": document["metadata"]["chunk_id"],
-                    "page_content": document.get("page_content", ""),
-                    "metadata": document["metadata"],
-                    "embedding": embedding,
+                    "id": document["metadata"]["chunk_id"],  # Pinecone requires 'id'
+                    "values": embedding,                     # Pinecone requires 'values'
+                    "metadata": {
+                        **document["metadata"],
+                        "page_content": document.get("page_content", "")
+                    }
                 }
             )
 
@@ -60,6 +61,7 @@ class RetrievalService:
 
         documents = self.ingest_documents(jsonl_path)
 
-        PGVectorStore.insert_embeddings(documents)
+        from backend.app.services.vector.pinecone_service import PineconeService
+        PineconeService.upsert_vectors(documents)
 
         return documents

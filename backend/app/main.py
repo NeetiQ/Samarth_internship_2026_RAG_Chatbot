@@ -21,6 +21,7 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from app.api.v1 import api_router
 from app.database.session import engine
+from app.services.vector.pinecone_service import PineconeService
 settings = get_settings()
 
 logger = logging.getLogger("legal-rag")
@@ -105,11 +106,10 @@ def create_app() -> FastAPI:
         try:
             async with engine.connect() as conn:
                 await conn.execute(text("SELECT 1"))
-                result = await conn.execute(
-                    text("SELECT extname FROM pg_extension WHERE extname = 'vector'")
-                )
-                if not result.fetchone():
-                    raise HTTPException(status_code=503, detail="PGVector extension not loaded")
+                await conn.execute(text("SELECT 1"))
+            
+            if not PineconeService.check_health():
+                raise HTTPException(status_code=503, detail="Pinecone vector database not ready")
             return {"status": "ready", "project": settings.PROJECT_NAME}
         except HTTPException:
             raise
