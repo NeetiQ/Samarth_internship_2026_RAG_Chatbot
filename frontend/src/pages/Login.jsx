@@ -1,7 +1,17 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import "./Login.css";
 
 export default function Login() {
+  const navigate = useNavigate();
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+
+    // TODO: later connect backend API here
+    navigate("/dashboard");
+  };
+
   return (
     <div className="login-container">
 
@@ -24,7 +34,8 @@ export default function Login() {
         <div className="login-card">
           <h2>Welcome Back</h2>
 
-          <form>
+          {/* ONLY CHANGE IS HERE */}
+          <form onSubmit={handleLogin}>
             <input type="email" placeholder="Email Address" />
             <input type="password" placeholder="Password" />
 
