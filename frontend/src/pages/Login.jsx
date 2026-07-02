@@ -1,17 +1,7 @@
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
 import "./Login.css";
 
 export default function Login() {
-  const navigate = useNavigate();
-
-  const handleLogin = (e) => {
-    e.preventDefault();
-
-    // TODO: later connect backend API here
-    navigate("/dashboard");
-  };
-
   return (
     <div className="login-container">
 
@@ -34,14 +24,19 @@ export default function Login() {
         <div className="login-card">
           <h2>Welcome Back</h2>
 
-          {/* ONLY CHANGE IS HERE */}
-          <form onSubmit={handleLogin}>
+          <form>
             <input type="email" placeholder="Email Address" />
             <input type="password" placeholder="Password" />
 
-            <button type="submit">Sign In</button>
+            <button type="submit">
+              Sign In
+            </button>
 
-            <button className="google-btn" type="button">
+            <button
+              className="google-btn"
+              type="button"
+              onClick={handleGoogleLogin}
+            >
               Continue with Google
             </button>
           </form>
@@ -69,8 +64,9 @@ export default function Login() {
           <h2>AI-Powered Legal Assistant</h2>
 
           <p>
-            Analyze judgments, compare cases, generate summaries,
-            and gain legal insights instantly.
+            Analyze judgments, compare cases,
+            generate summaries, and gain legal
+            insights instantly.
           </p>
 
           <div className="quote">

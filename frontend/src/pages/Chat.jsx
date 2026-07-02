@@ -56,6 +56,7 @@ function Chat() {
 
     setMessages((prev) => [...prev, userMessage]);
 
+    // Simulated AI Response
     setTimeout(() => {
       const aiMessage = {
         id: Date.now() + 1,
@@ -77,24 +78,29 @@ function Chat() {
     >
       <Sidebar />
 
-      <div className="flex-1 p-6 overflow-hidden">
+      <div className="flex-1 flex flex-col p-6 overflow-hidden">
         <Navbar />
 
-        <div className="flex gap-6 mt-6 h-[calc(100vh-120px)]">
+        <div className="flex flex-1 gap-6 mt-6 min-h-0 pb-4">
+          {/* Conversation List */}
           <ConversationList
             conversations={conversations}
             activeConversation={activeConversation}
             setActiveConversation={setActiveConversation}
           />
 
+          {/* Chat Card */}
           <div
-            className={`flex-1 rounded-3xl border flex flex-col overflow-hidden transition-all duration-300 ${
+            className={`flex-1 rounded-3xl border overflow-hidden flex flex-col shadow-xl ${
               darkMode
                 ? "bg-[#111827] border-[#1E293B]"
                 : "bg-white border-slate-200"
             }`}
           >
-            <ChatHeader />
+            <ChatHeader
+              messages={messages}
+              conversation={activeConversation}
+            />
 
             <ChatWindow messages={messages} />
 
