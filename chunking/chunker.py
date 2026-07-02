@@ -1,5 +1,6 @@
 import json
 import logging
+import hashlib
 from typing import List
 
 try:
@@ -73,6 +74,8 @@ class DocumentChunker:
 
         chunked_documents = []
 
+        seen_chunk_ids = set()
+
         for doc in documents:
 
             chunks = self.splitter.split_text(doc.page_content)
@@ -87,6 +90,13 @@ class DocumentChunker:
                 ""
             )
 
+            # Create a unique document signature
+            document_signature = hashlib.sha256(
+                (
+                    source + doc.page_content
+                ).encode("utf-8")
+            ).hexdigest()
+
             total_chunks = len(chunks)
 
             for idx, chunk_text in enumerate(chunks):
@@ -96,8 +106,27 @@ class DocumentChunker:
 
                 metadata = dict(doc.metadata)
 
-                metadata["chunk_id"] = f"{case_id}_{idx}"
-                metadata["doc_id"] = case_id
+                # Stable unique document ID
+                metadata["doc_id"] = document_signature
+
+                # Stable unique chunk ID
+                chunk_id = hashlib.sha256(
+                    (
+                        document_signature +
+                        "_" +
+                        str(idx)
+                    ).encode("utf-8")
+                ).hexdigest()
+
+                # Safety check
+                if chunk_id in seen_chunk_ids:
+                    raise ValueError(
+                        f"Duplicate chunk_id generated: {chunk_id}"
+                    )
+
+                seen_chunk_ids.add(chunk_id)
+
+                metadata["chunk_id"] = chunk_id
                 metadata["source"] = source
                 metadata["chunk_index"] = idx
                 metadata["total_chunks"] = total_chunks
@@ -112,6 +141,10 @@ class DocumentChunker:
 
         logger.info(
             f"Generated {len(chunked_documents)} chunks"
+        )
+
+        logger.info(
+            f"Verified {len(seen_chunk_ids)} unique chunk IDs"
         )
 
         return chunked_documents
