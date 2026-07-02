@@ -1,8 +1,6 @@
 from retrieval.pipelines.retrieval_service import RetrievalService
 
-# TODO:
-# Replace this path with Team A's final repository path once available.
-FILE_PATH = "ingestion/outputs/chunks/chunked_documents.jsonl"
+FILE_PATH = "chunked_documents.jsonl"
 
 
 def main():
@@ -12,7 +10,7 @@ def main():
     documents = service.ingest_documents(FILE_PATH)
 
     print(f"Total Chunks: {len(documents)}")
-    print(f"Embedding Dimension: {len(documents[0]['embedding'])}")
+    print(f"Embedding Dimension: {len(documents[0]['values'])}")
 
     print("\nMetadata:")
     print(documents[0]["metadata"])

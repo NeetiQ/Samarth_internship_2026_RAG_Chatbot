@@ -1,25 +1,17 @@
-import requests
+from retrieval.search.retriever import Retriever
 
-from rag_chat.config import RETRIEVAL_API_URL
+retriever = Retriever()
 
 
 def retrieve_context(question, top_k=5):
 
-    payload = {
+    results = retriever.retrieve(
+        query=question,
+        top_k=top_k,
+    )
+
+    return {
         "query": question,
-        "top_k": top_k
+        "count": len(results),
+        "results": results,
     }
-
-    try:
-        response = requests.post(
-            RETRIEVAL_API_URL,
-            json=payload,
-            timeout=30
-        )
-
-        response.raise_for_status()
-
-        return response.json()
-
-    except requests.exceptions.RequestException as e:
-        raise Exception(f"Retrieval Service Error: {e}")
