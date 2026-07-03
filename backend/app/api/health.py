@@ -54,9 +54,14 @@ async def detailed_health_check():
         cur.execute("SELECT 1")
         services_status["database"] = "healthy"
         
-        cur.execute("SELECT extname FROM pg_extension WHERE extname = 'vector'")
-        if cur.fetchone():
+        # Pinecone vector database check
+        try:
+            from pinecone import Pinecone
+            pc = Pinecone(api_key=settings.PINECONE_API_KEY)
+            pc.describe_index(settings.PINECONE_INDEX_NAME)
             services_status["vectordb"] = "healthy"
+        except Exception as e:
+            services_status["vectordb"] = f"unhealthy: {str(e)}"
         
         cur.close()
         conn.close()

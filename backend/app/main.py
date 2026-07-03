@@ -105,11 +105,7 @@ def create_app() -> FastAPI:
         try:
             async with engine.connect() as conn:
                 await conn.execute(text("SELECT 1"))
-                result = await conn.execute(
-                    text("SELECT extname FROM pg_extension WHERE extname = 'vector'")
-                )
-                if not result.fetchone():
-                    raise HTTPException(status_code=503, detail="PGVector extension not loaded")
+                # Removed PGVector check. Pinecone is now used for vector storage.
             return {"status": "ready", "project": settings.PROJECT_NAME}
         except HTTPException:
             raise

@@ -1,6 +1,6 @@
 # Database Schema (V2)
 
-The backend uses PostgreSQL with the `pgvector` extension. 
+The backend uses PostgreSQL with the `Pinecone` extension. 
 
 ## Tables
 
@@ -17,7 +17,7 @@ Stores text chunks extracted from documents. **Embeddings are stored directly he
 - `document_id` (FK -> documents.id)
 - `content` (Text)
 - **Structured Metadata**: `page_number`, `section`, `paragraph`, `chunk_index`
-- **Vector**: `embedding` (PGVector 1024-dim)
+- **Vector**: `embedding` (Pinecone 1024-dim)
 - `created_at`
 
 ### 3. `processing_jobs`

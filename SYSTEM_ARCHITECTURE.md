@@ -19,7 +19,7 @@ graph TD
     OCR --> CLEAN[Text Cleaning]
     CLEAN --> CHUNK[Chunking]
     CHUNK --> EMBED[Embedding Generation]
-    EMBED --> PGV[(PGVector Storage)]
+    EMBED --> PGV[(Pinecone Storage)]
     PGV --> SEARCH[Similarity Search]
     SEARCH --> PROMPT[Prompt Construction]
     PROMPT --> GEMINI[Gemini]
@@ -36,9 +36,9 @@ graph TD
 | JWT Authentication | Verifies identity on every request | Proposed |
 | Authorization Middleware | Resolves `current_user`, enforces ownership | Proposed |
 | Ingestion Pipeline | OCR → clean → chunk → embed → store | Source doc |
-| Retrieval Module | Query embedding → PGVector cosine search → Top-K chunks | Source doc |
+| Retrieval Module | Query embedding → Pinecone cosine search → Top-K chunks | Source doc |
 | RAG Chat Module | Prompt construction, Gemini call, citation generation, history | Source doc |
-| PGVector Store | Vector index over document chunks | Source doc |
+| Pinecone Store | Vector index over document chunks | Source doc |
 
 ## 4. Why One Integrated Backend
 
@@ -56,7 +56,7 @@ sequenceDiagram
     participant U as User
     participant FE as Frontend
     participant API as FastAPI Backend
-    participant DB as PostgreSQL/PGVector
+    participant DB as PostgreSQL/Pinecone
     participant G as Gemini
 
     U->>FE: Ask question

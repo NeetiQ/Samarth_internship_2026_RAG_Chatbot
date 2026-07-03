@@ -2,8 +2,12 @@
 Logger configuration
 """
 
-# TODO: Add logging configuration here
-    
+import logging
+import json
+from datetime import datetime
+from typing import Dict, Any
+
+class JSONFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         """Format log record as JSON."""
         log_data: Dict[str, Any] = {

@@ -2,7 +2,6 @@ import enum
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime, Enum, ForeignKey, Text, Float, Boolean
 from sqlalchemy.orm import relationship
-from pgvector.sqlalchemy import Vector
 from app.database.base import Base
 
 class ProcessingStage(str, enum.Enum):
@@ -69,9 +68,7 @@ class Chunk(Base):
     from sqlalchemy.dialects.postgresql import JSONB
     metadata_ = Column("metadata", JSONB, nullable=True)
     
-    # PGVector embedding matching Team B's 384 dimensions
-    embedding = Column(Vector(384), nullable=True) 
-    
+    # Removed pgvector embedding column. Vector embeddings are now in Pinecone.    
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
