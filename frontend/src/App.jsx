@@ -7,7 +7,7 @@ import CaseComparison from "./pages/CaseComparison";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
 import UploadDocuments from "./pages/UploadDocuments";
-
+import Signup from "./pages/Signup";
 function App() {
   const { darkMode } = useTheme();
 
@@ -25,6 +25,7 @@ function App() {
         <Route path="/upload-documents" element={<UploadDocuments />} />
         <Route path="/compare" element={<CaseComparison />} />
         <Route path="/chat" element={<Chat />} />
+        <Route path="/signup" element={<Signup />} /> 
         <Route path="/settings" element={<Settings />} />
       </Routes>
     </div>

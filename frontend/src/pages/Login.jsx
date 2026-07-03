@@ -1,15 +1,60 @@
+
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import "./Login.css";
 
 export default function Login() {
+  const navigate = useNavigate();
+
+  const API_URL = "http://localhost:8000";
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleGoogleLogin = () => {
+    alert("Google Login is not implemented yet.");
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+
+    try {
+      const res = await fetch(`${API_URL}/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.detail || "Login failed");
+        return;
+      }
+
+      localStorage.setItem("token", data.access_token);
+
+      alert("Login Successful ✅");
+
+      navigate("/dashboard");
+    } catch (err) {
+      console.error(err);
+      alert("Backend not reachable");
+    }
+  };
+
   return (
     <div className="login-container">
 
-      {/* Background Glow */}
       <div className="blob blob1"></div>
       <div className="blob blob2"></div>
 
-      {/* Left Side */}
       <motion.div
         className="left-panel"
         initial={{ x: -100, opacity: 0 }}
@@ -24,9 +69,23 @@ export default function Login() {
         <div className="login-card">
           <h2>Welcome Back</h2>
 
-          <form>
-            <input type="email" placeholder="Email Address" />
-            <input type="password" placeholder="Password" />
+          <form onSubmit={handleLogin}>
+
+            <input
+              type="email"
+              placeholder="Email Address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
 
             <button type="submit">
               Sign In
@@ -39,15 +98,21 @@ export default function Login() {
             >
               Continue with Google
             </button>
+
           </form>
 
           <p className="signup-link">
-            Don't have an account? <span>Sign Up</span>
+            Don't have an account?{" "}
+            <span
+              style={{ cursor: "pointer" }}
+              onClick={() => navigate("/signup")}
+            >
+              Sign Up
+            </span>
           </p>
         </div>
       </motion.div>
 
-      {/* Right Side */}
       <motion.div
         className="right-panel"
         animate={{
