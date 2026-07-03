@@ -9,6 +9,9 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), "../.env"), override=False)
+
 from app.database.base import Base
 import app.models.all_models  # To ensure models are loaded
 from app.core.settings import get_settings
