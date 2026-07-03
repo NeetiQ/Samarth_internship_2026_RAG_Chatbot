@@ -8,8 +8,7 @@ services:
     env_file:
       - .env
     environment:
-      POSTGRES_SERVER: db
-      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@db:5432/legal_rag}
+      DATABASE_URL: ${DATABASE_URL}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       SECRET_KEY: ${SECRET_KEY:-CHANGE-ME-IN-PRODUCTION}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-BAAI/bge-small-en-v1.5}
@@ -23,9 +22,6 @@ services:
       PINECONE_API_KEY: ${PINECONE_API_KEY}
       PINECONE_INDEX: ${PINECONE_INDEX}
       PINECONE_NAMESPACE: ${PINECONE_NAMESPACE:-default}
-    depends_on:
-      db:
-        condition: service_healthy
     volumes:
       - uploads_data:/app/data/uploads
       - corpus_data:/app/data/corpus
@@ -52,24 +48,6 @@ services:
         condition: service_started
     restart: unless-stopped
 
-  db:
-    image: postgres:16
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-legal_rag}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
 volumes:
-  postgres_data:
   uploads_data:
   corpus_data:
