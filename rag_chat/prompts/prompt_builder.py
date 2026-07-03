@@ -1,5 +1,5 @@
-from prompts.system_prompt import SYSTEM_PROMPT
-from prompts.history_formatter import format_history
+from .system_prompt import SYSTEM_PROMPT
+from .history_formatter import format_history
 
 def build_prompt(question, context, history=None):
 
