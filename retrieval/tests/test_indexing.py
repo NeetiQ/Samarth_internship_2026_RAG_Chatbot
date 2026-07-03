@@ -1,6 +1,6 @@
 from retrieval.pipelines.retrieval_service import RetrievalService
 
-FILE_PATH = "ingestion/outputs/chunks/chunked_documents.jsonl"
+FILE_PATH = "chunked_documents.jsonl"
 
 
 def main():
