@@ -8,21 +8,20 @@ from datetime import datetime, timedelta
 from sqlalchemy import create_engine, text
 
 # =====================
-# NEON DB
+# DATABASE
 # =====================
 DATABASE_URL = "postgresql://neondb_owner:npg_1U8ZTzsqBNuQ@ep-silent-grass-atrorq50-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require"
 
 engine = create_engine(DATABASE_URL)
 
 # =====================
-# JWT CONFIG
+# JWT
 # =====================
 SECRET_KEY = "super_secret_key_123"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 # =====================
-# APP
+# FASTAPI
 # =====================
 app = FastAPI()
 
@@ -35,14 +34,14 @@ app.add_middleware(
 )
 
 # =====================
-# MODELS
+# MODEL
 # =====================
 class AuthRequest(BaseModel):
     email: str
     password: str
 
 # =====================
-# TOKEN
+# JWT TOKEN
 # =====================
 def create_token(data: dict):
     payload = data.copy()
@@ -50,46 +49,42 @@ def create_token(data: dict):
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 # =====================
-# REGISTER API (FIXED)
+# REGISTER
 # =====================
 @app.post("/register")
 def register(user: AuthRequest):
-    try:
-        with engine.begin() as conn:
 
-            existing = conn.execute(
-                text("""
-                SELECT id
-                FROM app_users
-                WHERE email=:email
-                """),
-                {"email": user.email}
-            ).fetchone()
+    with engine.begin() as conn:
 
-            if existing:
-                raise HTTPException(status_code=400, detail="User already exists")
+        existing = conn.execute(
+            text("""
+            SELECT id
+            FROM app_users
+            WHERE email=:email
+            """),
+            {"email": user.email}
+        ).fetchone()
 
-            conn.execute(
-                text("""
-                INSERT INTO app_users
-                (email, hashed_password, is_active, is_superuser)
-                VALUES
-                (:email, :password, true, false)
-                """),
-                {
-                    "email": user.email,
-                    "password": user.password
-                }
-            )
+        if existing:
+            raise HTTPException(status_code=400, detail="User already exists")
 
-        return {"message": "Signup Successful"}
+        conn.execute(
+            text("""
+            INSERT INTO app_users
+            (email, hashed_password, is_active, is_superuser)
+            VALUES
+            (:email, :password, true, false)
+            """),
+            {
+                "email": user.email,
+                "password": user.password
+            }
+        )
 
-    except Exception as e:
-        import traceback
-        traceback.print_exc()   # <-- terminal me poora error print karega
-        raise HTTPException(status_code=500, detail=str(e))
+    return {"message": "Signup Successful"}
+
 # =====================
-# LOGIN API
+# LOGIN
 # =====================
 @app.post("/login")
 def login(user: AuthRequest):
@@ -97,15 +92,19 @@ def login(user: AuthRequest):
     with engine.connect() as conn:
 
         db_user = conn.execute(
-            text("SELECT * FROM users WHERE email = :email"),
+            text("""
+            SELECT *
+            FROM app_users
+            WHERE email=:email
+            """),
             {"email": user.email}
         ).fetchone()
 
-        if not db_user:
+        if db_user is None:
             raise HTTPException(status_code=404, detail="User not found")
 
-        if db_user.password_hash != user.password:
-            raise HTTPException(status_code=401, detail="Wrong password")
+        if db_user.hashed_password != user.password:
+            raise HTTPException(status_code=401, detail="Incorrect password")
 
         token = create_token({"sub": user.email})
 
@@ -115,8 +114,8 @@ def login(user: AuthRequest):
         }
 
 # =====================
-# TEST ROUTE
+# TEST
 # =====================
 @app.get("/")
 def root():
-    return {"message": "Backend running"}
+    return {"message": "Backend Running Successfully"}
