@@ -1,6 +1,6 @@
 import json
 import logging
-
+import hashlib
 from typing import List
 
 try:
@@ -27,6 +27,17 @@ class DocumentChunker:
             chunk_size=CHUNK_SIZE,
             chunk_overlap=CHUNK_OVERLAP,
             separators=[
+                "\nIssue for Consideration",
+                "\nHeadnotes",
+                "\nJUDGMENT",
+                "\nJudgment",
+                "\nORDER",
+                "\nOrder",
+                "\nFacts",
+                "\nFACTS",
+                "\nAnalysis",
+                "\nReasoning",
+                "\nHeld",
                 "\n\n",
                 "\n",
                 ". ",
@@ -39,21 +50,21 @@ class DocumentChunker:
 
         documents = []
 
-        with open(jsonl_path, "r", encoding="utf-8") as f:
+        with open(jsonl_path, "r", encoding="utf-8") as file:
 
-            for line in f:
+            for line in file:
 
                 if not line.strip():
                     continue
 
                 data = json.loads(line)
 
-                doc = Document(
-                    page_content=data["page_content"],
-                    metadata=data["metadata"]
+                documents.append(
+                    Document(
+                        page_content=data["page_content"],
+                        metadata=data["metadata"]
+                    )
                 )
-
-                documents.append(doc)
 
         logger.info(f"Loaded {len(documents)} documents")
 
@@ -63,11 +74,11 @@ class DocumentChunker:
 
         chunked_documents = []
 
+        seen_chunk_ids = set()
+
         for doc in documents:
 
-            chunks = self.splitter.split_text(
-                doc.page_content
-            )
+            chunks = self.splitter.split_text(doc.page_content)
 
             case_id = doc.metadata.get(
                 "case_id",
@@ -79,6 +90,13 @@ class DocumentChunker:
                 ""
             )
 
+            # Create a unique document signature
+            document_signature = hashlib.sha256(
+                (
+                    source + doc.page_content
+                ).encode("utf-8")
+            ).hexdigest()
+
             total_chunks = len(chunks)
 
             for idx, chunk_text in enumerate(chunks):
@@ -88,33 +106,45 @@ class DocumentChunker:
 
                 metadata = dict(doc.metadata)
 
-                metadata["chunk_id"] = (
-                    f"{case_id}_{idx}"
-                )
+                # Stable unique document ID
+                metadata["doc_id"] = document_signature
 
-                metadata["doc_id"] = case_id
+                # Stable unique chunk ID
+                chunk_id = hashlib.sha256(
+                    (
+                        document_signature +
+                        "_" +
+                        str(idx)
+                    ).encode("utf-8")
+                ).hexdigest()
 
+                # Safety check
+                if chunk_id in seen_chunk_ids:
+                    raise ValueError(
+                        f"Duplicate chunk_id generated: {chunk_id}"
+                    )
+
+                seen_chunk_ids.add(chunk_id)
+
+                metadata["chunk_id"] = chunk_id
                 metadata["source"] = source
-
                 metadata["chunk_index"] = idx
-
                 metadata["total_chunks"] = total_chunks
-
-                metadata["chunk_length"] = len(
-                    chunk_text
-                )
-
-                chunk_doc = Document(
-                    page_content=chunk_text,
-                    metadata=metadata
-                )
+                metadata["chunk_length"] = len(chunk_text)
 
                 chunked_documents.append(
-                    chunk_doc
+                    Document(
+                        page_content=chunk_text,
+                        metadata=metadata
+                    )
                 )
 
         logger.info(
             f"Generated {len(chunked_documents)} chunks"
+        )
+
+        logger.info(
+            f"Verified {len(seen_chunk_ids)} unique chunk IDs"
         )
 
         return chunked_documents
@@ -129,7 +159,7 @@ class DocumentChunker:
             output_file,
             "w",
             encoding="utf-8"
-        ) as f:
+        ) as file:
 
             for doc in chunked_docs:
 
@@ -138,7 +168,7 @@ class DocumentChunker:
                     "metadata": doc.metadata
                 }
 
-                f.write(
+                file.write(
                     json.dumps(
                         record,
                         ensure_ascii=False
@@ -146,5 +176,5 @@ class DocumentChunker:
                 )
 
         logger.info(
-            f"Saved chunks to {output_file}"
+            f"Saved {len(chunked_docs)} chunks to {output_file}"
         )
