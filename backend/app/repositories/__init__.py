@@ -1,0 +1,4 @@
+from app.repositories.document_repository import document_repo, DocumentRepository
+from app.repositories.chunk_repository import chunk_repo, ChunkRepository
+from app.repositories.processing_job_repository import job_repo, ProcessingJobRepository
+from app.repositories.chat_repository import chat_session_repo, ChatSessionRepository

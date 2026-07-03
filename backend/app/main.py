@@ -1,121 +1,122 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-
-from jose import jwt
-from datetime import datetime, timedelta
-
-from sqlalchemy import create_engine, text
-
-# =====================
-# DATABASE
-# =====================
-DATABASE_URL = "postgresql://neondb_owner:npg_1U8ZTzsqBNuQ@ep-silent-grass-atrorq50-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require"
-
-engine = create_engine(DATABASE_URL)
-
-# =====================
-# JWT
-# =====================
-SECRET_KEY = "super_secret_key_123"
-ALGORITHM = "HS256"
-
-# =====================
-# FASTAPI
-# =====================
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+from sqlalchemy import text
+from app.core.settings import get_settings
+from app.core.exceptions import (
+    AppException,
+    app_exception_handler,
+    validation_exception_handler,
+    sqlalchemy_exception_handler,
+    general_exception_handler,
 )
+import logging
+import os
+from urllib.parse import urlparse
+from dotenv import load_dotenv
 
-# =====================
-# MODEL
-# =====================
-class AuthRequest(BaseModel):
-    email: str
-    password: str
+# Load environments from multiple sources before other app imports
+load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env"), override=False)
 
-# =====================
-# JWT TOKEN
-# =====================
-def create_token(data: dict):
-    payload = data.copy()
-    payload["exp"] = datetime.utcnow() + timedelta(hours=1)
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+from fastapi.exceptions import RequestValidationError
+from sqlalchemy.exc import SQLAlchemyError
+from app.api.v1 import api_router
+from app.database.session import engine
+from app.services.vector.pinecone_service import PineconeService
+settings = get_settings()
 
-# =====================
-# REGISTER
-# =====================
-@app.post("/register")
-def register(user: AuthRequest):
+logger = logging.getLogger("legal-rag")
 
-    with engine.begin() as conn:
 
-        existing = conn.execute(
-            text("""
-            SELECT id
-            FROM app_users
-            WHERE email=:email
-            """),
-            {"email": user.email}
-        ).fetchone()
+def _detect_provider(hostname: str) -> str:
+    """Detect cloud database provider from the hostname."""
+    provider_hints = {
+        "render.com": "Render",
+        "neon.tech": "Neon",
+        "supabase.co": "Supabase",
+        "amazonaws.com": "AWS RDS",
+        "azure.com": "Azure",
+        "cloudsql": "Google Cloud SQL",
+        "elephantsql.com": "ElephantSQL",
+        "aiven.io": "Aiven",
+    }
+    for hint, name in provider_hints.items():
+        if hint in hostname:
+            return name
+    if hostname in ("localhost", "127.0.0.1", "db"):
+        return "Local / Docker"
+    return "Unknown"
 
-        if existing:
-            raise HTTPException(status_code=400, detail="User already exists")
 
-        conn.execute(
-            text("""
-            INSERT INTO app_users
-            (email, hashed_password, is_active, is_superuser)
-            VALUES
-            (:email, :password, true, false)
-            """),
-            {
-                "email": user.email,
-                "password": user.password
-            }
-        )
+def create_app() -> FastAPI:
+    app = FastAPI(
+        title=settings.PROJECT_NAME,
+        openapi_url=f"{settings.API_V1_STR}/openapi.json",
+        description="Legal RAG System Backend Foundation",
+        version="1.0.0",
+    )
 
-    return {"message": "Signup Successful"}
+    # Middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
-# =====================
-# LOGIN
-# =====================
-@app.post("/login")
-def login(user: AuthRequest):
+    # Exception Handlers
+    app.add_exception_handler(AppException, app_exception_handler)
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
+    app.add_exception_handler(Exception, general_exception_handler)
 
-    with engine.connect() as conn:
+    # Include routers
+    app.include_router(api_router, prefix=settings.API_V1_STR)
 
-        db_user = conn.execute(
-            text("""
-            SELECT *
-            FROM app_users
-            WHERE email=:email
-            """),
-            {"email": user.email}
-        ).fetchone()
+    @app.on_event("startup")
+    async def log_deployment_info():
+        """Log deployment configuration on startup (never logs passwords)."""
+        try:
+            parsed = urlparse(settings.DATABASE_URL)
+            db_host = parsed.hostname or "unknown"
+            db_port = parsed.port or 5432
+            db_name = (parsed.path or "").lstrip("/") or "unknown"
+            ssl_enabled = "sslmode" in (parsed.query or "")
+            provider = _detect_provider(db_host)
 
-        if db_user is None:
-            raise HTTPException(status_code=404, detail="User not found")
+            logger.info("=" * 60)
+            logger.info("DEPLOYMENT CONFIGURATION")
+            logger.info("=" * 60)
+            logger.info(f"  Environment : {settings.ENVIRONMENT}")
+            logger.info(f"  DB Host     : {db_host}:{db_port}")
+            logger.info(f"  DB Name     : {db_name}")
+            logger.info(f"  DB Provider : {provider}")
+            logger.info(f"  SSL Enabled : {ssl_enabled}")
+            logger.info(f"  Debug Mode  : {settings.DEBUG}")
+            logger.info("=" * 60)
+        except Exception as e:
+            logger.warning(f"Could not log deployment info: {e}")
 
-        if db_user.hashed_password != user.password:
-            raise HTTPException(status_code=401, detail="Incorrect password")
+    @app.get("/health", tags=["System"])
+    async def health_check():
+        return {"status": "ok", "project": settings.PROJECT_NAME}
 
-        token = create_token({"sub": user.email})
+    @app.get("/ready", tags=["System"])
+    async def readiness_check():
+        try:
+            async with engine.connect() as conn:
+                await conn.execute(text("SELECT 1"))
+                await conn.execute(text("SELECT 1"))
+            
+            if not PineconeService.check_health():
+                raise HTTPException(status_code=503, detail="Pinecone vector database not ready")
+            return {"status": "ready", "project": settings.PROJECT_NAME}
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(status_code=503, detail="Database not ready")
 
-        return {
-            "access_token": token,
-            "token_type": "bearer"
-        }
+    return app
 
-# =====================
-# TEST
-# =====================
-@app.get("/")
-def root():
-    return {"message": "Backend Running Successfully"}
+app = create_app()
+
