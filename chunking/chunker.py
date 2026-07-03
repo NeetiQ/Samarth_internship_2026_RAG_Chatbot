@@ -9,7 +9,7 @@ except ImportError:
     from langchain_core.documents import Document
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from config import CHUNK_SIZE, CHUNK_OVERLAP
+from chunking.config import CHUNK_SIZE, CHUNK_OVERLAP
 
 logging.basicConfig(
     level=logging.INFO,

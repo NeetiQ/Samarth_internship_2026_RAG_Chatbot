@@ -1,10 +1,20 @@
 import os
-from dotenv import load_dotenv
 import sys
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from dotenv import load_dotenv
+
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+load_dotenv(os.path.join(BASE_DIR, ".env"))
+
 import time
 import json
 import pickle
-import argparse
 import pandas as pd
 from tqdm import tqdm
 from multiprocessing import Pool
@@ -15,6 +25,9 @@ from metadata_loader import load_metadata
 from pdf_extractor import extract_pdf_pages
 from text_cleaner import clean_document
 from document_builder import build_document
+
+from chunking.run_chunking import run_chunking
+from ingestion.outputs.pinecone.upload_to_pinecone import upload_chunks
 
 def worker_process_pdf(args: Tuple[Dict[str, Any], str]) -> Dict[str, Any]:
     """
@@ -174,55 +187,30 @@ def sync_pkl_from_jsonl(jsonl_path: str, pkl_path: str):
         pickle.dump(documents, f)
     print(f"Successfully synchronized {len(documents)} LangChain Document objects to {pkl_path}")
 
-def main():
-    load_dotenv()
 
-    parser = argparse.ArgumentParser(
-        description="Legal RAG Ingestion Pipeline"
-    )
-    parser.add_argument(
-    "--metadata_path",
-    type=str,
-    default=os.getenv("METADATA_PATH", "Data/metadata.parquet"),
-    help="Path to metadata.parquet"
-    )
+def run_ingestion_pipeline(
+    metadata_path,
+    pdf_dir,
+    output_dir,
+    num_processes=None,
+    resume=True,
+):
+    """
+    Main entry point for the ingestion pipeline.
+    Can be imported and called directly by the backend.
+    """
 
-    parser.add_argument(
-    "--pdf_dir",
-    type=str,
-    default=os.getenv("PDF_DIR", "Data/english"),
-    help="Directory containing judgment PDFs"
-    )
-
-    parser.add_argument(
-    "--output_dir",
-    type=str,
-    default=os.getenv("OUTPUT_DIR", "output"),
-    help="Output directory to save reports and documents"
-    )
-
-    parser.add_argument(
-    "--num_processes",
-    type=int,
-    default=int(os.getenv("NUM_PROCESSES", os.cpu_count())),
-    help="Number of parallel processes"
-    )
     
-    parser.add_argument("--no_resume", action="store_true",
-                        help="Disable resuming and overwrite existing outputs")
+    os.makedirs(output_dir, exist_ok=True)
     
-    args = parser.parse_args()
-    
-    os.makedirs(args.output_dir, exist_ok=True)
-    
-    jsonl_path = os.path.join(args.output_dir, "documents.jsonl")
-    pkl_path = os.path.join(args.output_dir, "documents.pkl")
-    report_path = os.path.join(args.output_dir, "processing_report.csv")
-    failed_path = os.path.join(args.output_dir, "failed_files.csv")
+    jsonl_path = os.path.join(output_dir, "documents.jsonl")
+    pkl_path = os.path.join(output_dir, "documents.pkl")
+    report_path = os.path.join(output_dir, "processing_report.csv")
+    failed_path = os.path.join(output_dir, "failed_files.csv")
     
     # Check for resuming status
     processed_case_ids = set()
-    resume_mode = not args.no_resume
+    resume_mode = not not resume
     
     if resume_mode and os.path.exists(report_path):
         try:
@@ -236,7 +224,7 @@ def main():
             
     # Load metadata
     print("Loading metadata...")
-    df_meta = load_metadata(args.metadata_path)
+    df_meta = load_metadata(metadata_path)
     print(f"Total rows in metadata: {len(df_meta)}")
     
     # Filter rows to process
@@ -258,14 +246,14 @@ def main():
     open_mode = "a" if (resume_mode and os.path.exists(jsonl_path)) else "w"
     
     # Prepare task arguments
-    tasks = [(row.to_dict(), args.pdf_dir) for _, row in df_to_process.iterrows()]
+    tasks = [(row.to_dict(), pdf_dir) for _, row in df_to_process.iterrows()]
     
     results_list = []
     
-    print(f"Starting multiprocessing pool with {args.num_processes} workers...")
+    print(f"Starting multiprocessing pool with {num_processes} workers...")
     
     with open(jsonl_path, open_mode, encoding="utf-8") as f_jsonl:
-        with Pool(processes=args.num_processes) as pool:
+        with Pool(processes=num_processes) as pool:
             # We iterate over results as they complete to show live progress and write to jsonl incrementally
             for result in tqdm(pool.imap_unordered(worker_process_pdf, tasks), total=len(tasks), desc="Processing PDFs"):
                 results_list.append(result)
@@ -283,6 +271,75 @@ def main():
     sync_pkl_from_jsonl(jsonl_path, pkl_path)
     
     print("Pipeline run finished successfully!")
+    
+# ---------------------------------------
+# STEP 2 : Chunking
+# ---------------------------------------
+
+    chunk_output = os.path.join(
+        output_dir,
+        "chunked_documents_new.jsonl"
+        )
+    
+    print("\nStarting Chunking Pipeline...")
+    
+    chunk_result = run_chunking(
+        input_file=jsonl_path,
+        output_file=chunk_output
+        )
+    
+    print("Chunking Completed.")
+    
+    # ---------------------------------------
+# STEP 3 : Upload to Pinecone
+# ---------------------------------------
+    
+    print("\nStarting Pinecone Upload...")
+    
+    upload_result = upload_chunks(
+        chunk_file=chunk_output
+    )
+    
+    print("Pinecone Upload Completed.")
+    
+    return {
+        "status": "success",
+        "processed": len(results_list),
+        "failed": len(
+            [r for r in results_list if r["status"] == "failed"]
+            
+            ),
+            "chunking": chunk_result,
+            "pinecone": upload_result,
+            "output_dir": output_dir,
+            
+            }
+
+
+def ingest_document(
+    metadata_path,
+    pdf_dir,
+    output_dir,
+    num_processes=None,
+    resume=True,
+):
+    """
+    Public API for backend integration.
+    Backend should call ONLY this function.
+    """
+
+    return run_ingestion_pipeline(
+        metadata_path=metadata_path,
+        pdf_dir=pdf_dir,
+        output_dir=output_dir,
+        num_processes=num_processes,
+        resume=resume,
+    )
 
 if __name__ == "__main__":
-    main()
+
+    run_ingestion_pipeline(
+        metadata_path=os.getenv("METADATA_PATH"),
+        pdf_dir=os.getenv("PDF_DIR"),
+        output_dir=os.getenv("OUTPUT_DIR"),
+    )
