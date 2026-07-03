@@ -21,7 +21,6 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from app.api.v1 import api_router
 from app.database.session import engine
-from app.services.vector.pinecone_service import PineconeService
 settings = get_settings()
 
 logger = logging.getLogger("legal-rag")
@@ -106,10 +105,7 @@ def create_app() -> FastAPI:
         try:
             async with engine.connect() as conn:
                 await conn.execute(text("SELECT 1"))
-                await conn.execute(text("SELECT 1"))
-            
-            if not PineconeService.check_health():
-                raise HTTPException(status_code=503, detail="Pinecone vector database not ready")
+                # Removed PGVector check. Pinecone is now used for vector storage.
             return {"status": "ready", "project": settings.PROJECT_NAME}
         except HTTPException:
             raise

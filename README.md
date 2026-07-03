@@ -7,7 +7,7 @@
 > retrieval, mismatched chunk sizes, etc.) it is called out explicitly rather than smoothed over.
 
 A full-stack Legal Retrieval-Augmented Generation (RAG) assistant. Upload legal PDFs, run OCR
-and chunking, store embeddings in PGVector, retrieve relevant passages, and chat with
+and chunking, store embeddings in Pinecone, retrieve relevant passages, and chat with
 Gemini-powered answers that include citations.
 
 ## What This System Does
@@ -17,9 +17,9 @@ Gemini-powered answers that include citations.
    (`text_cleaner.py`), splits it into chunks (`chunking/chunker.py`, **500 characters / 50
    character overlap** via LangChain's `RecursiveCharacterTextSplitter`), embeds each chunk
    (`retrieval/embeddings/embedder.py`, `BAAI/bge-small-en-v1.5`, 384 dimensions, normalized),
-   and writes the result to the `legal_chunks` table in PostgreSQL/PGVector.
+   and writes the result to the `legal_chunks` table in PostgreSQL/Pinecone.
 3. A user asks a question via `POST /api/v1/chat`. The backend embeds the query, runs a cosine
-   similarity search over PGVector (`retrieval/search/retriever.py`), builds a prompt
+   similarity search over Pinecone (`retrieval/search/retriever.py`), builds a prompt
    (`rag_chat/prompts/prompt_builder.py`), and calls Gemini (`rag_chat/llm/gemini_client.py`).
 4. The answer and citations (built directly from the retrieved chunks) are returned to the
    frontend.
@@ -30,7 +30,7 @@ Gemini-powered answers that include citations.
 - **PDF Upload & OCR ingestion path** — background processing job per document, polled via a
   status endpoint
 - **Chunking & Embeddings** — LangChain text splitting + SentenceTransformer embeddings
-- **PGVector Retrieval** — cosine similarity search (`embedding <=> query_embedding`)
+- **Pinecone Retrieval** — cosine similarity search (`embedding <=> query_embedding`)
 - **Gemini LLM Chat** — session-based chat with citation objects attached to each answer
 - **React Frontend** — dashboard, upload, chat, case-comparison, and settings pages
 
@@ -46,7 +46,7 @@ Gemini-powered answers that include citations.
                     ▼                   ▼                   ▼
               ┌──────────┐      ┌──────────────┐    ┌──────────────┐
               │PostgreSQL│      │ chunking/ +  │    │  rag_chat/   │
-              │ PGVector │      │ retrieval/   │    │  (Gemini +   │
+              │ Pinecone │      │ retrieval/   │    │  (Gemini +   │
               │          │      │ (ingestion & │    │  citations)  │
               │          │      │  search)     │    │              │
               └──────────┘      └──────────────┘    └──────────────┘
@@ -63,7 +63,7 @@ single FastAPI app. There is no ingestion/retrieval/chat network hop.
 | Layer | Technology |
 |---|---|
 | Backend API | FastAPI 0.116, SQLAlchemy 2 (async, `asyncpg`), Alembic |
-| Database | PostgreSQL 16 + `pgvector/pgvector:pg16` image |
+| Database | PostgreSQL 16 + `Pinecone/Pinecone:pg16` image |
 | Embeddings | `sentence-transformers` 5.0, `BAAI/bge-small-en-v1.5` (384-dim) |
 | LLM | Google Gemini via `google-genai`, default model `gemini-2.5-flash` |
 | OCR / extraction | PyMuPDF (`pdf_extractor.py`); `paddleocr` is a backend dependency but is not
@@ -75,7 +75,7 @@ single FastAPI app. There is no ingestion/retrieval/chat network hop.
 ## Prerequisites
 
 - Docker & Docker Compose (recommended)
-- **Or** locally: Python 3.12+, Node.js 20+, PostgreSQL 16 with the `pgvector` extension
+- **Or** locally: Python 3.12+, Node.js 20+, PostgreSQL 16 with the `Pinecone` extension
 - A [Google Gemini API key](https://aistudio.google.com/apikey)
 
 ## Quick Start (Docker)
@@ -205,7 +205,7 @@ See `.env.example` for the full grouped list.
 | DELETE | `/api/v1/chat/history/{session_id}` | Delete a session |
 | POST | `/api/v1/chat/query-rewrite` | Rewrite a follow-up query (currently a pass-through, see [RAG_PIPELINE.md](./RAG_PIPELINE.md)) |
 | GET | `/health` | Liveness check |
-| GET | `/ready` | Readiness (DB + pgvector extension) |
+| GET | `/ready` | Readiness (DB + Pinecone extension) |
 
 There is **no** `DELETE /api/v1/documents/{document_id}` endpoint in this release — uploaded
 documents cannot currently be deleted through the API. Full contracts:
@@ -218,7 +218,7 @@ See [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md) for the full, verified reposi
 ## Known Gaps in This Release
 
 - **Retrieval is not scoped by user or by document ownership.** `retrieval/search/retriever.py`
-  and `retrieval/vectordb/pgvector_store.py` run a plain cosine-similarity query over the entire
+  and `retrieval/vectordb/Pinecone_store.py` run a plain cosine-similarity query over the entire
   `legal_chunks` table. Chat and `/api/v1/retrieval/retrieve` can therefore surface chunks from
   *any* user's private uploads, not just the shared corpus and the requesting user's own
   documents. See [SECURITY.md](./SECURITY.md).
@@ -232,7 +232,7 @@ See [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md) for the full, verified reposi
 | Symptom | Likely Cause | Fix |
 |---|---|---|
 | `503 Database not ready` on `/ready` | Missing `DATABASE_URL` or DB not ready | Check `.env`; ensure `db` passes its healthcheck before `api` starts |
-| `vector` type not found | PGVector extension not enabled | `CREATE EXTENSION IF NOT EXISTS vector;` on the target database |
+| `vector` type not found | Pinecone extension not enabled | `CREATE EXTENSION IF NOT EXISTS vector;` on the target database |
 | 401 on every request | Wrong/rotated `SECRET_KEY` between restarts | Keep `SECRET_KEY` stable across deploys |
 | `GEMINI_API_KEY not configured or invalid` | Missing/invalid Gemini key | Set `GEMINI_API_KEY` in `.env`, restart the API |
 | Corpus seed skipped | `chunked_documents.jsonl` missing at repo root | Run `python backend/scripts/generate_embeddings.py`, or accept the warning and seed later |

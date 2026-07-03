@@ -2,11 +2,12 @@
 Retriever module.
 
 Generates query embeddings and retrieves the
-most relevant document chunks from PGVector.
+most relevant document chunks from Pinecone.
 """
 
 from retrieval.config.settings import Settings
 from retrieval.embeddings.embedder import Embedder
+from retrieval.vectordb.pinecone_store import PineconeStore
 
 
 class Retriever:
@@ -16,6 +17,7 @@ class Retriever:
 
     def __init__(self):
         self.embedder = Embedder()
+        self.vector_store = PineconeStore()
 
     def retrieve(
         self,
@@ -38,8 +40,7 @@ class Retriever:
 
         query_embedding = self.embedder.encode(query)
 
-        from backend.app.services.vector.pinecone_service import PineconeService
-        results = PineconeService.query_vectors(
+        results = self.vector_store.search(
             query_embedding=query_embedding,
             top_k=top_k,
         )

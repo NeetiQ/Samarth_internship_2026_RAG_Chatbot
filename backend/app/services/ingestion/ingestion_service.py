@@ -5,8 +5,8 @@ import os
 
 # Add root of the project to path for Team A's scripts
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../..")))
-from pdf_extractor import extract_pdf_pages
-from text_cleaner import clean_document
+from extracted.pdf_extractor import extract_pdf_pages
+from extracted.text_cleaner import clean_document
 
 from app.repositories import job_repo, document_repo, chunk_repo
 from app.models.all_models import ProcessingStage

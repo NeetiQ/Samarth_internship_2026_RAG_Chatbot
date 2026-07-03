@@ -40,8 +40,35 @@ def parse_date(value: str | None) -> datetime | None:
     return None
 
 
-def vector_to_sql(embedding: list[float]) -> str:
-    return "[" + ",".join(str(x) for x in embedding) + "]"
+def upload_to_pinecone(batch_records: list[dict]):
+    pinecone_key = os.getenv("PINECONE_API_KEY")
+    pinecone_index = os.getenv("PINECONE_INDEX_NAME")
+    if not pinecone_key or not pinecone_index:
+        print("Pinecone credentials missing, skipping vector upload.")
+        return
+        
+    from pinecone import Pinecone
+    pc = Pinecone(api_key=pinecone_key)
+    index = pc.Index(pinecone_index)
+    
+    vectors = []
+    for record in batch_records:
+        metadata = record.get("metadata") or {}
+        chunk_id = metadata.get("chunk_id")
+        if not chunk_id:
+            continue
+        vectors.append({
+            "id": chunk_id,
+            "values": record["embedding"],
+            "metadata": {
+                "text": record.get("page_content", ""),
+                "source": metadata.get("source", ""),
+                "title": metadata.get("title", ""),
+                "case_id": metadata.get("case_id", ""),
+            }
+        })
+    if vectors:
+        index.upsert(vectors=vectors)
 
 
 def ensure_embedded_file() -> Path:
@@ -134,26 +161,30 @@ def seed(records: list[dict]) -> None:
 
             cur.execute(
                 """
-                INSERT INTO legal_chunks (chunk_id, document_id, page_content, metadata, embedding, created_at)
-                VALUES (%s, %s, %s, %s::jsonb, %s::vector, now())
+                INSERT INTO legal_chunks (chunk_id, document_id, page_content, metadata, created_at)
+                VALUES (%s, %s, %s, %s::jsonb, now())
                 ON CONFLICT (chunk_id) DO UPDATE SET
                     document_id = EXCLUDED.document_id,
                     page_content = EXCLUDED.page_content,
-                    metadata = EXCLUDED.metadata,
-                    embedding = EXCLUDED.embedding
+                    metadata = EXCLUDED.metadata
                 """,
                 (
                     chunk_id,
                     document_id,
                     record["page_content"],
                     json.dumps(metadata),
-                    vector_to_sql(record["embedding"]),
                 ),
             )
             inserted += 1
             if inserted % BATCH_SIZE == 0:
                 conn.commit()
-                print(f"  ... {inserted} chunks inserted")
+                print(f"  ... {inserted} chunks inserted into Postgres")
+                
+        # After inserting into Postgres, upload to Pinecone
+        print("Uploading embeddings to Pinecone...")
+        for i in range(0, len(records), BATCH_SIZE):
+            upload_to_pinecone(records[i:i+BATCH_SIZE])
+            print(f"  ... {min(i+BATCH_SIZE, len(records))} chunks uploaded to Pinecone")
 
     conn.commit()
     conn.close()

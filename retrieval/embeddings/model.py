@@ -24,10 +24,22 @@ class EmbeddingModel:
         """
 
         if cls._model is None:
-            print(f"Loading embedding model: {Settings.EMBEDDING_MODEL}")
 
-            cls._model = SentenceTransformer(
-                Settings.EMBEDDING_MODEL
-            )
+            print("=" * 60)
+            print(f"Loading Embedding Model : {Settings.EMBEDDING_MODEL}")
+            print(f"Embedding Dimension     : {Settings.EMBEDDING_DIMENSION}")
+            print("=" * 60)
+
+            try:
+                cls._model = SentenceTransformer(
+                    Settings.EMBEDDING_MODEL
+                )
+
+                print("Embedding model loaded successfully.\n")
+
+            except Exception as error:
+                raise RuntimeError(
+                    f"Failed to load embedding model: {error}"
+                ) from error
 
         return cls._model

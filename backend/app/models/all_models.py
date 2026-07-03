@@ -68,9 +68,7 @@ class Chunk(Base):
     from sqlalchemy.dialects.postgresql import JSONB
     metadata_ = Column("metadata", JSONB, nullable=True)
     
-    # Pinecone vector identifier mapping to Pinecone index
-    pinecone_vector_id = Column(String(255), nullable=True) 
-    
+    # Removed pgvector embedding column. Vector embeddings are now in Pinecone.    
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships

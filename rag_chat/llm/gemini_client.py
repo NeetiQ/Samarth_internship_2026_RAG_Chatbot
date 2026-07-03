@@ -1,6 +1,7 @@
 from google import genai
 
 from rag_chat.config import GEMINI_API_KEY
+
 from rag_chat.llm.model_config import (
     MODEL_NAME,
     TEMPERATURE,
@@ -34,6 +35,7 @@ def generate_response(prompt):
     )
 
     text = getattr(response, "text", "")
+
     return clean_response(text)
 
 

@@ -11,7 +11,7 @@ graph TD
     C --> D[Cleaning]
     D --> E[Chunking]
     E --> F[Embedding Generation]
-    F --> G[Vector Storage - PGVector]
+    F --> G[Vector Storage - Pinecone]
     G --> H[Processing Job Marked Complete]
     H --> I[Search Ready]
 ```
@@ -24,7 +24,7 @@ graph TD
 | Cleaning | Normalizes whitespace, removes OCR artifacts/noise | Embedding quality degrades on noisy text; clean input produces more reliable similarity search |
 | Chunking | Splits cleaned text into fixed-size segments | A recursive character text splitter breaks documents into **1000-character chunks with 200-character overlap** — small enough for precise retrieval, with overlap to avoid severing context across chunk boundaries |
 | Embedding Generation | Converts each chunk into a dense vector via `BAAI/bge-small-en-v1.5` | This is what makes semantic (not just keyword) search possible |
-| Vector Storage | Writes vectors + metadata into PGVector | Makes chunks searchable via cosine similarity |
+| Vector Storage | Writes vectors + metadata into Pinecone | Makes chunks searchable via cosine similarity |
 | Processing Job | Tracks status (`uploaded` → `extracting` → `chunked` → `processed` → `failed`) | Gives the frontend and API consumers visibility into long-running async processing |
 
 **Source-specified intermediate outputs.** The original pipeline design persists intermediate state as JSONL files at each stage (`documents.jsonl` after extraction, `chunked_documents.jsonl` after chunking) before final vector storage. This provides a debug/replay trail if a later stage fails, so the pipeline can resume from the last successful stage rather than re-running OCR.
@@ -34,12 +34,12 @@ graph TD
 ```mermaid
 graph TD
     Q[User Query] --> QE[Query Embedding]
-    QE --> SS[Similarity Search - PGVector Cosine]
+    QE --> SS[Similarity Search - Pinecone Cosine]
     SS --> TK[Top-K Retrieval]
     TK --> MC[Metadata Collection]
 ```
 
-The retrieval module generates a real-time embedding for the incoming query, connects to the PostgreSQL/PGVector store, and runs a cosine similarity lookup to fetch the Top-K most relevant chunks, returning them with their metadata (source, page, chunk ID) for the chat layer to consume.
+The retrieval module generates a real-time embedding for the incoming query, connects to the PostgreSQL/Pinecone store, and runs a cosine similarity lookup to fetch the Top-K most relevant chunks, returning them with their metadata (source, page, chunk ID) for the chat layer to consume.
 
 > **📋 PROPOSED DESIGN — retrieval scope.** The source spec does not scope retrieval by user. To support the ownership model described in [DATABASE_DESIGN.md](./DATABASE_DESIGN.md), the similarity search is scoped to **the shared legal corpus plus the current user's own uploaded documents only** — never another user's private documents. See [SECURITY.md](./SECURITY.md) for enforcement details.
 
