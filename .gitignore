@@ -73,6 +73,10 @@ ingestion/outputs/chunks/*
 ingestion/outputs/metadata/*
 !ingestion/outputs/chunks/.gitkeep
 !ingestion/outputs/metadata/.gitkeep
+embedded_documents.jsonl
+chunked_documents.jsonl
+documents.jsonl
+metadata.parquet
 
 # Logs
 logs/
