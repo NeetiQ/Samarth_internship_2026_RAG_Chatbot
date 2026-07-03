@@ -1,9 +1,11 @@
-MODEL_NAME = "gemini-2.5-flash"
+import os
 
-TEMPERATURE = 0.3
+MODEL_NAME = os.getenv("LLM_MODEL", "gemini-2.5-flash")
 
-MAX_OUTPUT_TOKENS = 1024
+TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", 0.3))
 
-TOP_P = 0.95
+MAX_OUTPUT_TOKENS = int(os.getenv("MAX_OUTPUT_TOKENS", 1024))
 
-TOP_K = 40
+TOP_P = float(os.getenv("TOP_P", 0.95))
+
+TOP_K = int(os.getenv("TOP_K", 40))
