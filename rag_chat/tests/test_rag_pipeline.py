@@ -4,6 +4,48 @@ from rag_chat.llm.gemini_client import generate_response
 from rag_chat.citations.citation_formatter import format_citations
 
 
+# ==========================================
+# Mock classes for unit testing
+# ==========================================
+
+class MockRetrievalConnector:
+    def retrieve(self, query):
+        return {
+            "chunks": ["Sample legal chunk"],
+            "metadata": [
+                {
+                    "source": "test.pdf",
+                    "page": 1
+                }
+            ]
+        }
+
+
+class MockLLMClient:
+    def generate(self, prompt):
+        return "This is a generated answer"
+
+
+# ==========================================
+# Unit test with mocks
+# ==========================================
+
+def test_process_query():
+
+    pipeline = RAGPipeline(
+        retrieval_connector=MockRetrievalConnector(),
+        llm_client=MockLLMClient()
+    )
+
+    response = pipeline.process_query(
+        "What is the notice period?"
+    )
+
+
+# ==========================================
+# Integration test with real data
+# ==========================================
+
 def test_rag_pipeline():
 
     question = "What is anticipatory bail?"
