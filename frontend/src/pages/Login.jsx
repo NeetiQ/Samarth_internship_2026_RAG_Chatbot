@@ -1,36 +1,56 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { motion } from "framer-motion";
 import "./Login.css";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, signup } = useAuth();
 
-  const [isSignup, setIsSignup] = useState(false);
+  const API_URL = "http://localhost:8000";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleGoogleLogin = () => {
+    alert("Google Login is not implemented yet.");
+  };
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
 
     try {
-      if (isSignup) {
-        await signup(email, password, fullName);
-      } else {
-        await login(email, password);
+      // Clear any previous session
+      localStorage.removeItem("token");
+      localStorage.removeItem("userEmail");
+
+      const res = await fetch(`${API_URL}/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.detail || "Login failed");
+        return;
       }
+
+      // Store login session
+      localStorage.setItem("token", data.access_token);
+      localStorage.setItem("userEmail", email);
+
+      alert("Login Successful ✅");
+
       navigate("/dashboard");
     } catch (err) {
-      setError(err.message || "Authentication failed");
-    } finally {
-      setLoading(false);
+      console.error(err);
+      alert("Backend not reachable");
     }
   };
 
@@ -41,7 +61,7 @@ export default function Login() {
       <div className="blob blob1"></div>
       <div className="blob blob2"></div>
 
-      {/* Left Side */}
+      {/* Left Panel */}
       <motion.div
         className="left-panel"
         initial={{ x: -100, opacity: 0 }}
@@ -54,30 +74,10 @@ export default function Login() {
         </div>
 
         <div className="login-card">
-          <h2>{isSignup ? "Create Account" : "Welcome Back"}</h2>
+          <h2>Welcome Back</h2>
 
-          {error && (
-            <div style={{
-              color: "#dc2626",
-              background: "#fef2f2",
-              padding: "10px 14px",
-              borderRadius: "8px",
-              marginBottom: "16px",
-              fontSize: "14px",
-            }}>
-              {error}
-            </div>
-          )}
+          <form onSubmit={handleLogin}>
 
-          <form onSubmit={handleSubmit}>
-            {isSignup && (
-              <input
-                type="text"
-                placeholder="Full Name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-              />
-            )}
             <input
               type="email"
               placeholder="Email Address"
@@ -85,30 +85,42 @@ export default function Login() {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
+
             <input
               type="password"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={6}
             />
 
-            <button type="submit" disabled={loading}>
-              {loading ? "Please wait..." : isSignup ? "Create Account" : "Sign In"}
+            <button type="submit">
+              Sign In
             </button>
+
+            <button
+              className="google-btn"
+              type="button"
+              onClick={handleGoogleLogin}
+            >
+              Continue with Google
+            </button>
+
           </form>
 
           <p className="signup-link">
-            {isSignup ? "Already have an account? " : "Don't have an account? "}
-            <span onClick={() => { setIsSignup(!isSignup); setError(""); }}>
-              {isSignup ? "Sign In" : "Sign Up"}
+            Don't have an account?{" "}
+            <span
+              style={{ cursor: "pointer" }}
+              onClick={() => navigate("/signup")}
+            >
+              Sign Up
             </span>
           </p>
         </div>
       </motion.div>
 
-      {/* Right Side */}
+      {/* Right Panel */}
       <motion.div
         className="right-panel"
         animate={{
@@ -125,8 +137,9 @@ export default function Login() {
           <h2>AI-Powered Legal Assistant</h2>
 
           <p>
-            Analyze judgments, compare cases, generate summaries,
-            and gain legal insights instantly.
+            Analyze judgments, compare cases,
+            generate summaries, and gain legal
+            insights instantly.
           </p>
 
           <div className="quote">
@@ -134,6 +147,7 @@ export default function Login() {
           </div>
         </div>
       </motion.div>
+
     </div>
   );
 }

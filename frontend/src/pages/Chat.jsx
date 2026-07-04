@@ -1,7 +1,5 @@
 import { useState } from "react";
 import Sidebar from "../components/layout/Sidebar";
-import Navbar from "../components/layout/Navbar";
-import { authFetch } from "../services/api";
 
 import ConversationList from "../components/chat/ConversationList";
 import ChatHeader from "../components/chat/ChatHeader";
@@ -9,46 +7,120 @@ import ChatWindow from "../components/chat/ChatWindow";
 import ChatInput from "../components/chat/ChatInput";
 
 import { useTheme } from "../context/ThemeContext";
+import { addNotification } from "../utils/notifications";
 
 function Chat() {
   const { darkMode } = useTheme();
 
-  const [messages, setMessages] = useState([]);
-  const [isTyping, setIsTyping] = useState(false);
-
-  const [conversations] = useState([
-    {
-      id: 1,
-      title: "Property Dispute",
-      bookmarked: true,
-    },
-    {
-      id: 2,
-      title: "Criminal Appeal",
-      bookmarked: false,
-    },
-    {
-      id: 3,
-      title: "Land Acquisition",
-      bookmarked: true,
-    },
-    {
-      id: 4,
-      title: "Consumer Protection",
-      bookmarked: false,
-    },
-    {
-      id: 5,
-      title: "Civil Petition",
-      bookmarked: false,
-    },
+  // ==========================
+  // Conversations
+  // ==========================
+  const [conversations, setConversations] = useState([
+    { id: 1, title: "Property Dispute", bookmarked: true },
+    { id: 2, title: "Criminal Appeal", bookmarked: false },
+    { id: 3, title: "Land Acquisition", bookmarked: true },
+    { id: 4, title: "Consumer Protection", bookmarked: false },
+    { id: 5, title: "Civil Petition", bookmarked: false },
   ]);
 
-  const [activeConversation, setActiveConversation] =
-    useState(conversations[0]);
+  const [activeConversation, setActiveConversation] = useState(conversations[0]);
 
-  const handleSendMessage = async (text) => {
+  // ==========================
+  // Messages per conversation
+  // ==========================
+  const [messagesByConversation, setMessagesByConversation] = useState({});
+
+  const messages =
+    messagesByConversation[activeConversation?.id] || [];
+
+  // ==========================
+  // First message tracker
+  // ==========================
+  const [firstMessageMap, setFirstMessageMap] = useState({});
+
+  // ==========================
+  // ✅ NEW CHAT FIX (IMPORTANT)
+  // ==========================
+  const handleNewChat = () => {
+    const newChat = {
+      id: Date.now(),
+      title: "New Chat",
+      emoji: "⚖️",
+      bookmarked: false,
+    };
+
+    setConversations((prev) => [newChat, ...prev]);
+    setActiveConversation(newChat);
+
+    setMessagesByConversation((prev) => ({
+      ...prev,
+      [newChat.id]: [],
+    }));
+
+    setFirstMessageMap((prev) => ({
+      ...prev,
+      [newChat.id]: false,
+    }));
+  };
+
+  // ==========================
+  // AI Title Generator (Frontend only)
+  // ==========================
+  const refineText = (text) => {
+    return text
+      .replace(/tell me about|explain|what is|how to/gi, "")
+      .replace(/case/gi, "")
+      .trim();
+  };
+
+  const generateTitle = (text) => {
+    const clean = refineText(text).toLowerCase();
+
+    const rules = [
+      { keywords: ["property", "land", "house"], title: "Property dispute analysis", emoji: "🏠" },
+      { keywords: ["criminal", "theft", "murder"], title: "Criminal law proceedings", emoji: "⚖️" },
+      { keywords: ["appeal"], title: "Appeal case review", emoji: "📜" },
+      { keywords: ["consumer"], title: "Consumer protection case", emoji: "🛒" },
+      { keywords: ["timeline"], title: "Case timeline analysis", emoji: "⏱️" },
+    ];
+
+    for (let r of rules) {
+      if (r.keywords.some((k) => clean.includes(k))) {
+        return { title: r.title, emoji: r.emoji };
+      }
+    }
+
+    const fallback =
+      text.split(" ").slice(0, 5).join(" ") || "Legal discussion";
+
+    return { title: fallback, emoji: "⚖️" };
+  };
+
+  // ==========================
+  // Send Message
+  // ==========================
+  const handleSendMessage = (text) => {
     if (!text.trim()) return;
+
+    const convId = activeConversation.id;
+
+    // AI TITLE (ONLY FIRST MESSAGE)
+    if (!firstMessageMap[convId]) {
+      const aiTitle = generateTitle(text);
+
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === convId
+            ? { ...c, title: aiTitle.title, emoji: aiTitle.emoji }
+            : c
+        )
+      );
+
+      setFirstMessageMap((prev) => ({
+        ...prev,
+        [convId]: true,
+      }));
+    }
 
     const userMessage = {
       id: Date.now(),
@@ -56,74 +128,81 @@ function Chat() {
       text,
     };
 
-    setMessages((prev) => [...prev, userMessage]);
-    setIsTyping(true);
+    setMessagesByConversation((prev) => ({
+      ...prev,
+      [convId]: [...(prev[convId] || []), userMessage],
+    }));
 
-    try {
-      const response = await authFetch("/api/v1/chat", {
-        method: "POST",
-        body: JSON.stringify({ message: text, use_rag: true }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
+    setTimeout(() => {
       const aiMessage = {
         id: Date.now() + 1,
         sender: "ai",
-        text: data.message?.content || "No response generated.",
-        citations: data.message?.citations || [],
+        text: `Based on legal analysis regarding "${text}", this is a simulated response.`,
       };
 
-      setMessages((prev) => [...prev, aiMessage]);
-    } catch (error) {
-      console.error("Chat error:", error);
-      const errorMessage = {
-        id: Date.now() + 1,
-        sender: "ai",
-        text: "Sorry, I encountered an error while processing your request.",
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsTyping(false);
-    }
+      setMessagesByConversation((prev) => ({
+        ...prev,
+        [convId]: [...(prev[convId] || []), aiMessage],
+      }));
+
+      addNotification(
+        "AI Response Ready",
+        `Analysis generated for "${text}"`,
+        "🤖"
+      );
+    }, 2000);
+  };
+
+  // ==========================
+  // Quick actions
+  // ==========================
+  const handleQuickAction = (type) => {
+    const actions = {
+      summarize: "Summarize this conversation in legal terms.",
+      similar: "Find similar legal cases for this discussion.",
+      explain: "Explain legal terms used in this chat.",
+      timeline: "Generate case timeline from this discussion.",
+    };
+
+    handleSendMessage(actions[type]);
   };
 
   return (
     <div
       className={`flex h-screen overflow-hidden transition-all duration-300 ${
-        darkMode
-          ? "bg-[#0B1120] text-white"
-          : "bg-[#F8FAFC] text-slate-900"
+        darkMode ? "bg-[#0B1120] text-white" : "bg-[#F8FAFC] text-slate-900"
       }`}
     >
       <Sidebar />
 
-      <div className="flex-1 p-6 overflow-hidden">
-        <Navbar />
+      <div className="flex-1 flex flex-col p-6 overflow-hidden">
+        <div className="flex flex-1 gap-6 mt-6 min-h-0 pb-4">
 
-        <div className="flex gap-6 mt-6 h-[calc(100vh-120px)]">
+          {/* ✅ FIX: NEW CHAT BUTTON NOW WORKS */}
           <ConversationList
             conversations={conversations}
             activeConversation={activeConversation}
             setActiveConversation={setActiveConversation}
+            togglePin={() => {}}
+            renameChat={() => {}}
+            onNewChat={handleNewChat}
           />
 
           <div
-            className={`flex-1 rounded-3xl border flex flex-col overflow-hidden transition-all duration-300 ${
+            className={`flex-1 rounded-3xl border overflow-hidden flex flex-col shadow-xl ${
               darkMode
                 ? "bg-[#111827] border-[#1E293B]"
                 : "bg-white border-slate-200"
             }`}
           >
-            <ChatHeader />
+            <ChatHeader messages={messages} />
 
-            <ChatWindow messages={messages} isTyping={isTyping} />
+            <ChatWindow messages={messages} />
 
-            <ChatInput onSend={handleSendMessage} />
+            <ChatInput
+              onSend={handleSendMessage}
+              onQuickAction={handleQuickAction}
+            />
           </div>
         </div>
       </div>
