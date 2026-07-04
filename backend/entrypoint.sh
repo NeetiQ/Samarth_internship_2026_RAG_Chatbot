@@ -35,5 +35,41 @@ python backend/scripts/seed_corpus.py || {
   echo "WARNING: Corpus seed skipped or failed. API will start without pre-loaded data."
 }
 
-echo "Starting API server..."
-exec uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+echo "Starting diagnostic imports..."
+python -c "
+import traceback
+import sys
+import os
+from urllib.parse import urlparse
+
+print('1. Current working directory:', os.getcwd())
+print('2. sys.path:', sys.path)
+print('3. Python version:', sys.version)
+print('4. PORT:', os.environ.get('PORT', 'Not set'))
+
+db_url = os.environ.get('DATABASE_URL')
+if db_url:
+    print('5. DATABASE_URL scheme:', urlparse(db_url).scheme)
+else:
+    print('5. DATABASE_URL is not set')
+
+print('6. Directory checks:')
+print('   /app exists:', os.path.exists('/app'))
+print('   /app/backend exists:', os.path.exists('/app/backend'))
+print('   backend/app/main.py exists:', os.path.exists('backend/app/main.py'))
+
+print('\n7. Attempting import...')
+try:
+    from backend.app.main import app
+    print('Import successful')
+    
+    print('\n8. Starting Uvicorn programmatically...')
+    import uvicorn
+    # Strip any carriage return from PORT if present
+    port_str = os.environ.get('PORT', '8000').strip()
+    uvicorn.run(app, host='0.0.0.0', port=int(port_str))
+except Exception:
+    traceback.print_exc()
+    sys.exit(1)
+"
+
