@@ -5,7 +5,7 @@ from tests.sample_data import MOCK_CHUNKS
 
 def test_metadata_parser():
 
-    metadata = parse_metadata(CHUNKS[0])
+    metadata = parse_metadata(MOCK_CHUNKS[0])
 
     assert metadata["document_name"] == "CrPC.pdf"
     assert metadata["title"] == "Code of Criminal Procedure"

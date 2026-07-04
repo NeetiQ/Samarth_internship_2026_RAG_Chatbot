@@ -24,6 +24,7 @@ share/python-wheels/
 MANIFEST
 
 # Virtual environments
+.venv/
 venv/
 env/
 ENV/
@@ -42,6 +43,17 @@ venv.bak/
 .env
 .env.local
 .env.*.local
+frontend/.env
+frontend/.env.local
+ragchat.env
+TeamA_TeamB_Merged.env
+
+# Generated data artifacts
+*.jsonl
+embedded_documents.jsonl
+chunked_documents.jsonl
+documents.jsonl
+output/
 
 # Node
 node_modules/
@@ -55,12 +67,18 @@ build/
 htmlcov/
 .pytest_cache/
 .tox/
+embedded_documents.jsonl
+chunked_documents.jsonl
 
 # Ingestion outputs
 ingestion/outputs/chunks/*
 ingestion/outputs/metadata/*
 !ingestion/outputs/chunks/.gitkeep
 !ingestion/outputs/metadata/.gitkeep
+embedded_documents.jsonl
+chunked_documents.jsonl
+documents.jsonl
+metadata.parquet
 
 # Logs
 logs/
@@ -74,9 +92,9 @@ data/
 temp/
 
 # Docker
-.dockerignore
 docker-compose.override.yml
 
 # OS
 Thumbs.db
 .DS_Store
+chunked_documents_new.jsonl
