@@ -98,6 +98,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=True, extra="ignore")
 
 
-@lru_cache()
+import builtins
+@lru_cache
 def get_settings():
-    return Settings()
+    builtins.print("get_settings: Instantiating Settings()", flush=True)
+    s = Settings()
+    builtins.print("get_settings: Settings instantiated", flush=True)
+    return s

@@ -2,15 +2,27 @@
 Authentication API endpoints: signup, login, me.
 """
 
+import builtins
+def _trace(msg):
+    builtins.print(msg, flush=True)
+
+_trace("auth.py: Starting imports")
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+_trace("auth.py: Importing app.database.session")
 from app.database.session import get_db
+_trace("auth.py: Importing app.models.all_models")
 from app.models.all_models import User
+_trace("auth.py: Importing app.schemas.auth")
 from app.schemas.auth import SignupRequest, LoginRequest, TokenResponse, UserResponse
+_trace("auth.py: Importing app.core.security")
 from app.core.security import get_password_hash, verify_password, create_access_token
+_trace("auth.py: Importing app.dependencies.auth")
 from app.dependencies.auth import get_current_user
+
+_trace("auth.py: Finished imports")
 
 router = APIRouter()
 

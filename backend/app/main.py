@@ -1,6 +1,12 @@
+import builtins
+def _trace(msg):
+    builtins.print(msg, flush=True)
+
+_trace("main.py: Starting imports")
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
+_trace("main.py: Importing settings")
 from app.core.settings import get_settings
 from app.core.exceptions import (
     AppException,
@@ -15,13 +21,18 @@ from urllib.parse import urlparse
 from dotenv import load_dotenv
 
 # Load environments from multiple sources before other app imports
+_trace("main.py: load_dotenv")
 load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env"), override=False)
 
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import SQLAlchemyError
+_trace("main.py: importing api_router")
 from app.api.v1 import api_router
+_trace("main.py: importing engine")
 from app.database.session import engine
+_trace("main.py: calling get_settings")
 settings = get_settings()
+_trace("main.py: got settings")
 
 logger = logging.getLogger("legal-rag")
 
@@ -47,6 +58,7 @@ def _detect_provider(hostname: str) -> str:
 
 
 def create_app() -> FastAPI:
+    _trace("main.py: Entering create_app")
     app = FastAPI(
         title=settings.PROJECT_NAME,
         openapi_url=f"{settings.API_V1_STR}/openapi.json",
@@ -55,6 +67,7 @@ def create_app() -> FastAPI:
     )
 
     # Middleware
+    _trace("main.py: Adding CORSMiddleware")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -64,12 +77,14 @@ def create_app() -> FastAPI:
     )
 
     # Exception Handlers
+    _trace("main.py: Adding exception handlers")
     app.add_exception_handler(AppException, app_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
     app.add_exception_handler(Exception, general_exception_handler)
 
     # Include routers
+    _trace("main.py: Including API routers")
     app.include_router(api_router, prefix=settings.API_V1_STR)
 
     @app.on_event("startup")
@@ -112,7 +127,9 @@ def create_app() -> FastAPI:
         except Exception:
             raise HTTPException(status_code=503, detail="Database not ready")
 
+    _trace("main.py: Exiting create_app")
     return app
 
+_trace("main.py: Calling create_app()")
 app = create_app()
-
+_trace("main.py: Initialization complete.")
