@@ -1,7 +1,7 @@
 from rag_chat.prompts.prompt_builder import build_prompt
 from rag_chat.workflows.context_builder import build_context
 
-from tests.sample_data import (
+from rag_chat.tests.sample_data import (
     MOCK_QUESTION,
     MOCK_HISTORY,
     MOCK_CHUNKS

@@ -1,3 +1,5 @@
+import rag_chat.tests.test_setup
+
 from rag_chat.llm.gemini_client import (
     configure_client,
     generate_response

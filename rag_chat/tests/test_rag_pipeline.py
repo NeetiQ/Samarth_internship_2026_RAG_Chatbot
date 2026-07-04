@@ -1,9 +1,11 @@
+import rag_chat.tests.test_setup
+
 from rag_chat.workflows.context_builder import build_context
 from rag_chat.prompts.prompt_builder import build_prompt
 from rag_chat.llm.gemini_client import generate_response
 from rag_chat.citations.citation_formatter import format_citations
 
-from tests.sample_data import (
+from rag_chat.tests.sample_data import (
     MOCK_QUESTION,
     MOCK_HISTORY,
     MOCK_CHUNKS
