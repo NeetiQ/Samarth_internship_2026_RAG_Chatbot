@@ -1,6 +1,6 @@
 from rag_chat.citations.citation_formatter import format_citations
 
-from tests.sample_data import MOCK_CHUNKS
+from rag_chat.tests.sample_data import MOCK_CHUNKS
 
 
 def test_citation_formatter():

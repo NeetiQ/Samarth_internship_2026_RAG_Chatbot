@@ -1,4 +1,4 @@
-from tests.sample_data import MOCK_QUESTION
+from rag_chat.tests.sample_data import MOCK_QUESTION
 
 
 def test_retrieval_connector():
