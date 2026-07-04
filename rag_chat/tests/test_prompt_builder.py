@@ -1,38 +1,24 @@
 from rag_chat.prompts.prompt_builder import build_prompt
+from rag_chat.workflows.context_builder import build_context
+
+from tests.sample_data import (
+    QUESTION,
+    HISTORY,
+    CHUNKS
+)
 
 
 def test_prompt_builder():
 
-    question = "What is anticipatory bail?"
-
-    context = """
-Document: CrPC.pdf
-Title: Code of Criminal Procedure
-Section: Section 438
-Page: 45
-Source: Supreme Court Database
-
-Section 438 of the Code of Criminal Procedure provides provisions relating to anticipatory bail.
-"""
-
-    history = [
-        {
-            "role": "user",
-            "content": "What is bail?"
-        },
-        {
-            "role": "assistant",
-            "content": "Bail is the temporary release of an accused person while awaiting trial."
-        }
-    ]
+    context = build_context(CHUNKS)
 
     prompt = build_prompt(
-        question=question,
+        question=QUESTION,
         context=context,
-        history=history
+        history=HISTORY
     )
 
-    assert question in prompt
+    assert QUESTION in prompt
     assert "Section 438" in prompt
     assert "Code of Criminal Procedure" in prompt
     assert "What is bail?" in prompt
