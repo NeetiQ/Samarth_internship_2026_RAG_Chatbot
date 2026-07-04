@@ -130,4 +130,6 @@ def downgrade() -> None:
     op.drop_table('documents')
     op.drop_index(op.f('ix_chat_sessions_id'), table_name='chat_sessions')
     op.drop_table('chat_sessions')
+    op.execute('DROP TYPE IF EXISTS chatrole;')
+    op.execute('DROP TYPE IF EXISTS processingstage;')
     # ### end Alembic commands ###

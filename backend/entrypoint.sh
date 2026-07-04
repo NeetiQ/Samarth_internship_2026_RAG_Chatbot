@@ -1,6 +1,18 @@
 #!/bin/bash
 set -e
 
+echo "Waiting for database..."
+while ! python -c "
+import sys, os, psycopg
+try:
+    psycopg.connect(os.environ.get('DATABASE_URL'))
+except Exception as e:
+    sys.exit(1)
+sys.exit(0)
+" 2>/dev/null; do
+  sleep 1
+done
+
 echo "Running database migrations..."
 cd /app/backend
 alembic upgrade head
