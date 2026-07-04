@@ -2,15 +2,27 @@
 set -e
 
 echo "Waiting for database..."
+max_retries=30
+counter=0
+
 while ! python -c "
 import sys, os, psycopg
 try:
-    psycopg.connect(os.environ.get('DATABASE_URL'))
+    url = os.environ.get('DATABASE_URL')
+    if url and '+asyncpg' in url:
+        url = url.replace('+asyncpg', '')
+    psycopg.connect(url)
 except Exception as e:
+    print(f'DB connection failed: {e}', file=sys.stderr)
     sys.exit(1)
 sys.exit(0)
-" 2>/dev/null; do
+"; do
   sleep 1
+  counter=$((counter + 1))
+  if [ $counter -ge $max_retries ]; then
+    echo "Database connection timed out after $max_retries seconds."
+    exit 1
+  fi
 done
 
 echo "Running database migrations..."
