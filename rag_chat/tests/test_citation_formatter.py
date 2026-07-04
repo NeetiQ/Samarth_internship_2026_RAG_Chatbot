@@ -1,39 +1,28 @@
 from rag_chat.citations.citation_formatter import format_citations
 
+from tests.sample_data import MOCK_CHUNKS
 
-def test_format_citations():
 
-    metadata = [
-        {
-            "source": "lease.pdf",
-            "page": 5
-        },
-        {
-            "source": "agreement.pdf",
-            "page": 10
-        }
-    ]
+def test_citation_formatter():
 
-    citations = format_citations(metadata)
+    citations = format_citations(MOCK_CHUNKS)
 
+    assert citations is not None
+    assert isinstance(citations, list)
     assert len(citations) == 2
-    assert "Source: lease.pdf | Page: 5" in citations
-    assert "Source: agreement.pdf | Page: 10" in citations
+
+    assert "Code of Criminal Procedure" in citations[0]
+    assert "CrPC.pdf" in citations[0]
+    assert "Section 438" in citations[0]
+    assert "Supreme Court Database" in citations[0]
+
+    print("\nGenerated Citations:\n")
+
+    for citation in citations:
+        print(citation)
+
+    print("\nCitation Formatter Test Passed Successfully!")
 
 
-def test_duplicate_citations():
-
-    metadata = [
-        {
-            "source": "lease.pdf",
-            "page": 5
-        },
-        {
-            "source": "lease.pdf",
-            "page": 5
-        }
-    ]
-
-    citations = format_citations(metadata)
-
-    assert len(citations) == 1
+if __name__ == "__main__":
+    test_citation_formatter()

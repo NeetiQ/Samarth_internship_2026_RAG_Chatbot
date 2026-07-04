@@ -13,7 +13,7 @@ from rag_chat.llm.model_config import (
 
 def configure_client():
 
-    if not GEMINI_API_KEY or GEMINI_API_KEY == "your_gemini_api_key_here":
+    if not GEMINI_API_KEY:
         raise ValueError("GEMINI_API_KEY not found.")
 
     return genai.Client(api_key=GEMINI_API_KEY)

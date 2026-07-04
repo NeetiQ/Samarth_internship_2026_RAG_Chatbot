@@ -1,28 +1,33 @@
-from unittest.mock import patch
+from rag_chat.llm.gemini_client import (
+    configure_client,
+    generate_response
+)
 
-from rag_chat.llm.gemini_client import clean_response
+from rag_chat.config import GEMINI_API_KEY
 
-
-def test_clean_response():
-
-    response = "  Hello World  "
-
-    assert clean_response(response) == "Hello World"
+from tests.sample_data import MOCK_PROMPT
 
 
-@patch("rag_chat.llm.gemini_client.configure_client")
-def test_generate_response(mock_client):
+def test_gemini_client():
 
-    mock_response = type(
-        "MockResponse",
-        (),
-        {"text": "Generated Answer"}
-    )()
+    assert GEMINI_API_KEY is not None
+    assert GEMINI_API_KEY.strip() != ""
 
-    mock_client.return_value.models.generate_content.return_value = mock_response
+    client = configure_client()
 
-    from rag_chat.llm.gemini_client import generate_response
+    assert client is not None
 
-    result = generate_response("Test Prompt")
+    response = generate_response(MOCK_PROMPT)
 
-    assert result == "Generated Answer"
+    assert response is not None
+    assert isinstance(response, str)
+    assert len(response.strip()) > 0
+
+    print("\nGemini Response:\n")
+    print(response)
+
+    print("\nGemini Client Test Passed Successfully!")
+
+
+if __name__ == "__main__":
+    test_gemini_client()

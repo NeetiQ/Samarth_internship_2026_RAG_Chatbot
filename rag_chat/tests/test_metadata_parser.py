@@ -1,25 +1,11 @@
 from rag_chat.citations.metadata_parser import parse_metadata
 
+from tests.sample_data import MOCK_CHUNKS
+
 
 def test_metadata_parser():
 
-    chunk = {
-        "chunk_id": "chunk_001",
-        "page_content": (
-            "Section 438 of the Code of Criminal Procedure "
-            "provides provisions relating to anticipatory bail."
-        ),
-        "metadata": {
-            "document_name": "CrPC.pdf",
-            "title": "Code of Criminal Procedure",
-            "page": 45,
-            "section": "Section 438",
-            "source": "Supreme Court Database"
-        },
-        "score": 0.94
-    }
-
-    metadata = parse_metadata(chunk)
+    metadata = parse_metadata(MOCK_CHUNKS[0])
 
     assert metadata["document_name"] == "CrPC.pdf"
     assert metadata["title"] == "Code of Criminal Procedure"
