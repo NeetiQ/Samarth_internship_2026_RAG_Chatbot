@@ -6,7 +6,7 @@ import "./Login.css";
 export default function Login() {
   const navigate = useNavigate();
 
-  const API_URL = "http://localhost:8000";
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,16 +23,16 @@ export default function Login() {
       localStorage.removeItem("token");
       localStorage.removeItem("userEmail");
 
-      const res = await fetch(`${API_URL}/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      });
+     const res = await fetch(`${API_URL}/api/v1/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+  },
+      body: JSON.stringify({
+        email,
+        password,
+  }),
+});
 
       const data = await res.json();
 

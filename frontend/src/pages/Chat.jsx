@@ -1,209 +1,76 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "../components/layout/Sidebar";
-
-import ConversationList from "../components/chat/ConversationList";
 import ChatHeader from "../components/chat/ChatHeader";
 import ChatWindow from "../components/chat/ChatWindow";
 import ChatInput from "../components/chat/ChatInput";
-
 import { useTheme } from "../context/ThemeContext";
-import { addNotification } from "../utils/notifications";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 function Chat() {
   const { darkMode } = useTheme();
+  const [messages, setMessages] = useState([]);
+  const [sessionId, setSessionId] = useState(null);
 
-  // ==========================
-  // Conversations
-  // ==========================
-  const [conversations, setConversations] = useState([
-    { id: 1, title: "Property Dispute", bookmarked: true },
-    { id: 2, title: "Criminal Appeal", bookmarked: false },
-    { id: 3, title: "Land Acquisition", bookmarked: true },
-    { id: 4, title: "Consumer Protection", bookmarked: false },
-    { id: 5, title: "Civil Petition", bookmarked: false },
-  ]);
+  const authHeaders = () => ({
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${localStorage.getItem("token")}`,
+  });
 
-  const [activeConversation, setActiveConversation] = useState(conversations[0]);
-
-  // ==========================
-  // Messages per conversation
-  // ==========================
-  const [messagesByConversation, setMessagesByConversation] = useState({});
-
-  const messages =
-    messagesByConversation[activeConversation?.id] || [];
-
-  // ==========================
-  // First message tracker
-  // ==========================
-  const [firstMessageMap, setFirstMessageMap] = useState({});
-
-  // ==========================
-  // ✅ NEW CHAT FIX (IMPORTANT)
-  // ==========================
-  const handleNewChat = () => {
-    const newChat = {
-      id: Date.now(),
-      title: "New Chat",
-      emoji: "⚖️",
-      bookmarked: false,
-    };
-
-    setConversations((prev) => [newChat, ...prev]);
-    setActiveConversation(newChat);
-
-    setMessagesByConversation((prev) => ({
-      ...prev,
-      [newChat.id]: [],
-    }));
-
-    setFirstMessageMap((prev) => ({
-      ...prev,
-      [newChat.id]: false,
-    }));
-  };
-
-  // ==========================
-  // AI Title Generator (Frontend only)
-  // ==========================
-  const refineText = (text) => {
-    return text
-      .replace(/tell me about|explain|what is|how to/gi, "")
-      .replace(/case/gi, "")
-      .trim();
-  };
-
-  const generateTitle = (text) => {
-    const clean = refineText(text).toLowerCase();
-
-    const rules = [
-      { keywords: ["property", "land", "house"], title: "Property dispute analysis", emoji: "🏠" },
-      { keywords: ["criminal", "theft", "murder"], title: "Criminal law proceedings", emoji: "⚖️" },
-      { keywords: ["appeal"], title: "Appeal case review", emoji: "📜" },
-      { keywords: ["consumer"], title: "Consumer protection case", emoji: "🛒" },
-      { keywords: ["timeline"], title: "Case timeline analysis", emoji: "⏱️" },
-    ];
-
-    for (let r of rules) {
-      if (r.keywords.some((k) => clean.includes(k))) {
-        return { title: r.title, emoji: r.emoji };
+  // Ek hi session banao jab page load ho
+  useEffect(() => {
+    const createSession = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/v1/chat/history`, {
+          method: "POST",
+          headers: authHeaders(),
+        });
+        const data = await res.json();
+        setSessionId(data.id);
+      } catch (err) {
+        console.error(err);
       }
-    }
+    };
+    createSession();
+  }, []);
 
-    const fallback =
-      text.split(" ").slice(0, 5).join(" ") || "Legal discussion";
-
-    return { title: fallback, emoji: "⚖️" };
-  };
-
-  // ==========================
-  // Send Message
-  // ==========================
-  const handleSendMessage = (text) => {
+  const handleSendMessage = async (text) => {
     if (!text.trim()) return;
 
-    const convId = activeConversation.id;
+    setMessages((prev) => [...prev, { id: Date.now(), sender: "user", text }]);
 
-    // AI TITLE (ONLY FIRST MESSAGE)
-    if (!firstMessageMap[convId]) {
-      const aiTitle = generateTitle(text);
+    try {
+      const res = await fetch(`${API_URL}/api/v1/chat`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ message: text, session_id: sessionId }),
+      });
 
-      setConversations((prev) =>
-        prev.map((c) =>
-          c.id === convId
-            ? { ...c, title: aiTitle.title, emoji: aiTitle.emoji }
-            : c
-        )
-      );
+      const data = await res.json();
 
-      setFirstMessageMap((prev) => ({
+      if (!res.ok) {
+        alert(data.detail || "Chat failed");
+        return;
+      }
+
+      setMessages((prev) => [
         ...prev,
-        [convId]: true,
-      }));
+        { id: Date.now() + 1, sender: "ai", text: data.message.content },
+      ]);
+    } catch (err) {
+      console.error(err);
+      alert("Backend not reachable");
     }
-
-    const userMessage = {
-      id: Date.now(),
-      sender: "user",
-      text,
-    };
-
-    setMessagesByConversation((prev) => ({
-      ...prev,
-      [convId]: [...(prev[convId] || []), userMessage],
-    }));
-
-    setTimeout(() => {
-      const aiMessage = {
-        id: Date.now() + 1,
-        sender: "ai",
-        text: `Based on legal analysis regarding "${text}", this is a simulated response.`,
-      };
-
-      setMessagesByConversation((prev) => ({
-        ...prev,
-        [convId]: [...(prev[convId] || []), aiMessage],
-      }));
-
-      addNotification(
-        "AI Response Ready",
-        `Analysis generated for "${text}"`,
-        "🤖"
-      );
-    }, 2000);
-  };
-
-  // ==========================
-  // Quick actions
-  // ==========================
-  const handleQuickAction = (type) => {
-    const actions = {
-      summarize: "Summarize this conversation in legal terms.",
-      similar: "Find similar legal cases for this discussion.",
-      explain: "Explain legal terms used in this chat.",
-      timeline: "Generate case timeline from this discussion.",
-    };
-
-    handleSendMessage(actions[type]);
   };
 
   return (
-    <div
-      className={`flex h-screen overflow-hidden transition-all duration-300 ${
-        darkMode ? "bg-[#0B1120] text-white" : "bg-[#F8FAFC] text-slate-900"
-      }`}
-    >
+    <div className={`flex h-screen overflow-hidden ${darkMode ? "bg-[#0B1120] text-white" : "bg-[#F8FAFC] text-slate-900"}`}>
       <Sidebar />
-
       <div className="flex-1 flex flex-col p-6 overflow-hidden">
-        <div className="flex flex-1 gap-6 mt-6 min-h-0 pb-4">
-
-          {/* ✅ FIX: NEW CHAT BUTTON NOW WORKS */}
-          <ConversationList
-            conversations={conversations}
-            activeConversation={activeConversation}
-            setActiveConversation={setActiveConversation}
-            togglePin={() => {}}
-            renameChat={() => {}}
-            onNewChat={handleNewChat}
-          />
-
-          <div
-            className={`flex-1 rounded-3xl border overflow-hidden flex flex-col shadow-xl ${
-              darkMode
-                ? "bg-[#111827] border-[#1E293B]"
-                : "bg-white border-slate-200"
-            }`}
-          >
-            <ChatHeader messages={messages} />
-
-            <ChatWindow messages={messages} />
-
-            <ChatInput
-              onSend={handleSendMessage}
-              onQuickAction={handleQuickAction}
-            />
-          </div>
+        <div className={`flex-1 rounded-3xl border overflow-hidden flex flex-col shadow-xl mt-6 ${darkMode ? "bg-[#111827] border-[#1E293B]" : "bg-white border-slate-200"}`}>
+          <ChatHeader messages={messages} />
+          <ChatWindow messages={messages} />
+          <ChatInput onSend={handleSendMessage} onQuickAction={() => {}} />
         </div>
       </div>
     </div>

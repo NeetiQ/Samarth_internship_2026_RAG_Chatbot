@@ -4,6 +4,7 @@ from app.models.all_models import ChatSession, ChatMessage, ChatRole
 from app.schemas.chunk import RetrievalResult
 from app.schemas.chat import CitationResponse
 from app.repositories import chat_session_repo
+from sqlalchemy import select
 
 import sys
 import os
@@ -63,7 +64,7 @@ class RagService:
         return await chat_session_repo.get(self.db, id=session_id)
 
     async def get_history(self, session_id: int) -> List[ChatMessage]:
-        session = await self.get_session(session_id)
-        if session:
-            return session.messages
-        return []
+        result = await self.db.execute(
+            select(ChatMessage).where(ChatMessage.session_id == session_id)
+        )
+        return result.scalars().all()
