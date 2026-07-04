@@ -6,13 +6,7 @@ most relevant document chunks from Pinecone.
 """
 
 from retrieval.config.settings import Settings
-import builtins
-def _trace(msg):
-    builtins.print(msg, flush=True)
-
-_trace("retriever.py: Importing Embedder")
 from retrieval.embeddings.embedder import Embedder
-_trace("retriever.py: Importing PineconeStore")
 from retrieval.vectordb.pinecone_store import PineconeStore
 
 
@@ -22,11 +16,8 @@ class Retriever:
     """
 
     def __init__(self):
-        _trace("Retriever.__init__: Instantiating Embedder")
         self.embedder = Embedder()
-        _trace("Retriever.__init__: Instantiating PineconeStore")
         self.vector_store = PineconeStore()
-        _trace("Retriever.__init__: Done")
 
     def retrieve(
         self,

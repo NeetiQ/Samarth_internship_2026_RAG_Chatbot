@@ -15,14 +15,9 @@ class PineconeStore:
     """
 
     def __init__(self):
-        import builtins
-        builtins.print("PineconeStore.__init__: Initializing Pinecone", flush=True)
         self.pc = Pinecone(api_key=Settings.PINECONE_API_KEY)
-        builtins.print("PineconeStore.__init__: Pinecone initialized", flush=True)
         self.index_name = Settings.PINECONE_INDEX_NAME
-        builtins.print("PineconeStore.__init__: calling _create_index", flush=True)
         self._create_index()
-        builtins.print("PineconeStore.__init__: Done", flush=True)
 
         self.index = self.pc.Index(
             self.index_name
