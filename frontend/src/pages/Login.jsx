@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -20,6 +19,10 @@ export default function Login() {
     e.preventDefault();
 
     try {
+      // Clear any previous session
+      localStorage.removeItem("token");
+      localStorage.removeItem("userEmail");
+
       const res = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: {
@@ -38,7 +41,9 @@ export default function Login() {
         return;
       }
 
+      // Store login session
       localStorage.setItem("token", data.access_token);
+      localStorage.setItem("userEmail", email);
 
       alert("Login Successful ✅");
 
@@ -52,9 +57,11 @@ export default function Login() {
   return (
     <div className="login-container">
 
+      {/* Background Glow */}
       <div className="blob blob1"></div>
       <div className="blob blob2"></div>
 
+      {/* Left Panel */}
       <motion.div
         className="left-panel"
         initial={{ x: -100, opacity: 0 }}
@@ -113,6 +120,7 @@ export default function Login() {
         </div>
       </motion.div>
 
+      {/* Right Panel */}
       <motion.div
         className="right-panel"
         animate={{
@@ -139,6 +147,7 @@ export default function Login() {
           </div>
         </div>
       </motion.div>
+
     </div>
   );
 }
