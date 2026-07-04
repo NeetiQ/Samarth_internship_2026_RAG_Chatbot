@@ -4,25 +4,25 @@ from rag_chat.llm.gemini_client import generate_response
 from rag_chat.citations.citation_formatter import format_citations
 
 from tests.sample_data import (
-    QUESTION,
-    HISTORY,
-    CHUNKS
+    MOCK_QUESTION,
+    MOCK_HISTORY,
+    MOCK_CHUNKS
 )
 
 
 def test_rag_pipeline():
 
-    context = build_context(CHUNKS)
+    context = build_context(MOCK_CHUNKS)
 
     prompt = build_prompt(
-        question=QUESTION,
+        question=MOCK_QUESTION,
         context=context,
-        history=HISTORY
+        history=MOCK_HISTORY
     )
 
     answer = generate_response(prompt)
 
-    citations = format_citations(CHUNKS)
+    citations = format_citations(MOCK_CHUNKS)
 
     assert answer is not None
     assert isinstance(answer, str)
@@ -33,7 +33,7 @@ def test_rag_pipeline():
     assert len(citations) > 0
 
     print("\nQuestion:\n")
-    print(QUESTION)
+    print(MOCK_QUESTION)
 
     print("\nGenerated Answer:\n")
     print(answer)

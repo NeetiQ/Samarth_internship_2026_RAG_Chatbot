@@ -5,7 +5,7 @@ from rag_chat.llm.gemini_client import (
 
 from rag_chat.config import GEMINI_API_KEY
 
-from tests.sample_data import PROMPT
+from tests.sample_data import MOCK_PROMPT
 
 
 def test_gemini_client():
@@ -17,7 +17,7 @@ def test_gemini_client():
 
     assert client is not None
 
-    response = generate_response(PROMPT)
+    response = generate_response(MOCK_PROMPT)
 
     assert response is not None
     assert isinstance(response, str)

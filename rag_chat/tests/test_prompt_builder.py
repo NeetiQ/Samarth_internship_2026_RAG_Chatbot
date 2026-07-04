@@ -2,23 +2,23 @@ from rag_chat.prompts.prompt_builder import build_prompt
 from rag_chat.workflows.context_builder import build_context
 
 from tests.sample_data import (
-    QUESTION,
-    HISTORY,
-    CHUNKS
+    MOCK_QUESTION,
+    MOCK_HISTORY,
+    MOCK_CHUNKS
 )
 
 
 def test_prompt_builder():
 
-    context = build_context(CHUNKS)
+    context = build_context(MOCK_CHUNKS)
 
     prompt = build_prompt(
-        question=QUESTION,
+        question=MOCK_QUESTION,
         context=context,
-        history=HISTORY
+        history=MOCK_HISTORY
     )
 
-    assert QUESTION in prompt
+    assert MOCK_QUESTION in prompt
     assert "Section 438" in prompt
     assert "Code of Criminal Procedure" in prompt
     assert "What is bail?" in prompt

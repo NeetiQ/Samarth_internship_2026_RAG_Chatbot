@@ -1,11 +1,11 @@
 from rag_chat.workflows.context_builder import build_context
 
-from tests.sample_data import CHUNKS
+from tests.sample_data import MOCK_CHUNKS
 
 
 def test_context_builder():
 
-    context = build_context(CHUNKS)
+    context = build_context(MOCK_CHUNKS)
 
     assert context is not None
     assert isinstance(context, str)

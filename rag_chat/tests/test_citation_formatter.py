@@ -1,11 +1,11 @@
 from rag_chat.citations.citation_formatter import format_citations
 
-from tests.sample_data import CHUNKS
+from tests.sample_data import MOCK_CHUNKS
 
 
 def test_citation_formatter():
 
-    citations = format_citations(CHUNKS)
+    citations = format_citations(MOCK_CHUNKS)
 
     assert citations is not None
     assert isinstance(citations, list)
