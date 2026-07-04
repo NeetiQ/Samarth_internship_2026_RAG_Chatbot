@@ -2,6 +2,11 @@
 FastAPI Backend Application
 """
 
+from dotenv import load_dotenv
+
+load_dotenv("ragchat.env")
+
+
 from fastapi import FastAPI
 
 app = FastAPI(
