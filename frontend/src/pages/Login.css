@@ -1,0 +1,151 @@
+.login-container {
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+  background: #f8fafc;
+  position: relative;
+}
+
+/* Glow Effects */
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  z-index: 0;
+}
+
+.blob1 {
+  width: 300px;
+  height: 300px;
+  background: rgba(37, 99, 235, 0.15);
+  top: -100px;
+  left: -100px;
+}
+
+.blob2 {
+  width: 350px;
+  height: 350px;
+  background: rgba(212, 160, 23, 0.15);
+  bottom: -150px;
+  right: -100px;
+}
+
+.left-panel {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 80px;
+  z-index: 1;
+}
+
+.brand h1 {
+  color: #1e293b;
+  font-size: 3rem;
+  margin-bottom: 8px;
+}
+
+.brand p {
+  color: #64748b;
+  margin-bottom: 40px;
+}
+
+.login-card {
+  width: 420px;
+  padding: 35px;
+  border-radius: 24px;
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(15px);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+}
+
+.login-card h2 {
+  margin-bottom: 25px;
+  color: #1e293b;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+input {
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  font-size: 15px;
+}
+
+input:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+button {
+  padding: 16px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button[type="submit"] {
+  background: #d4a017;
+  color: white;
+}
+
+.google-btn {
+  background: white;
+  border: 1px solid #d1d5db;
+}
+
+.signup-link {
+  margin-top: 20px;
+  color: #64748b;
+}
+
+.signup-link span {
+  color: #2563eb;
+  cursor: pointer;
+}
+
+.right-panel {
+  width: 50%;
+  background: linear-gradient(
+    135deg,
+    #1e293b,
+    #2563eb
+  );
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+}
+
+.illustration {
+  text-align: center;
+  max-width: 450px;
+}
+
+.justice-icon {
+  font-size: 120px;
+  margin-bottom: 25px;
+}
+
+.illustration h2 {
+  color: white;
+  margin-bottom: 15px;
+}
+
+.illustration p {
+  opacity: 0.9;
+  line-height: 1.7;
+}
+
+.quote {
+  margin-top: 30px;
+  font-style: italic;
+  opacity: 0.8;
+}

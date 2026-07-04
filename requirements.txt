@@ -18,3 +18,8 @@ huggingface-hub>=0.33.4
 tokenizers>=0.21.0
 safetensors>=0.5.3
 tqdm>=4.67.1
+
+pypdf>=4.2.0
+langchain-core>=0.2.0
+langchain-text-splitters>=0.2.0
+google-genai>=0.1.2

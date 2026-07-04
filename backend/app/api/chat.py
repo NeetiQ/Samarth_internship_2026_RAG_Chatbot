@@ -2,7 +2,15 @@
 Chat API endpoints
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from typing import List, Optional
+import time
+import logging
+
+from rag_chat.workflows.rag_pipeline import process_query
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -50,22 +58,30 @@ async def send_message(request: ChatRequest):
             detail="Message content cannot be empty"
         )
     
-    # TODO: Implement actual chat logic
-    # 1. Retrieve relevant documents
-    # 2. Format prompt with context
-    # 3. Call LLM
-    # 4. Extract citations
-    # 5. Format response
-    
-    logger.info(f"Chat message received: {request.conversation_id}")
-    
-    return ChatResponse(
-        id="msg_placeholder_001",
-        content="Response placeholder - implement chat logic",
-        citations=[],
-        metadata={
-            "processing_time_ms": 0,
-            "model_used": "gpt-4",
-            "tokens_used": 0,
-        }
-    )
+    start_time = time.time()
+    try:
+        result = process_query(request.message, history=None)
+        
+        citations = []
+        for c in result.get("citations", []):
+            citations.append(Citation(
+                text=c.get("text", ""),
+                source=c.get("source", "Unknown"),
+                page=c.get("page", 0),
+                chunk_id=str(c.get("chunk_id", ""))
+            ))
+            
+        processing_time_ms = int((time.time() - start_time) * 1000)
+        
+        return ChatResponse(
+            id=f"msg_{int(time.time())}",
+            content=result.get("answer", ""),
+            citations=citations,
+            metadata={
+                "processing_time_ms": processing_time_ms,
+                "conversation_id": request.conversation_id
+            }
+        )
+    except Exception as e:
+        logger.error(f"Chat failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
