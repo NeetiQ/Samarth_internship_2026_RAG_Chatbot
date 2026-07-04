@@ -35,40 +35,62 @@ python backend/scripts/seed_corpus.py || {
   echo "WARNING: Corpus seed skipped or failed. API will start without pre-loaded data."
 }
 
-echo "Starting diagnostic imports..."
+echo "Starting systematic binary-search of imports..."
 python -c "
-import traceback
-import sys
-import os
-from urllib.parse import urlparse
+import sys, os
+def trace(msg):
+    print(msg, flush=True)
 
-print('1. Current working directory:', os.getcwd())
-print('2. sys.path:', sys.path)
-print('3. Python version:', sys.version)
-print('4. PORT:', os.environ.get('PORT', 'Not set'))
-
-db_url = os.environ.get('DATABASE_URL')
-if db_url:
-    print('5. DATABASE_URL scheme:', urlparse(db_url).scheme)
-else:
-    print('5. DATABASE_URL is not set')
-
-print('6. Directory checks:')
-print('   /app exists:', os.path.exists('/app'))
-print('   /app/backend exists:', os.path.exists('/app/backend'))
-print('   backend/app/main.py exists:', os.path.exists('backend/app/main.py'))
-
-print('\n7. Attempting import...')
+trace('STARTING IMPORT TRACE')
 try:
-    from backend.app.main import app
-    print('Import successful')
+    trace('Importing backend...')
+    import backend
+    trace('OK: imported backend')
+
+    trace('Importing backend.app...')
+    import backend.app
+    trace('OK: imported backend.app')
+
+    trace('Importing backend.app.core.settings...')
+    from backend.app.core import settings
+    trace('OK: imported backend.app.core.settings')
+
+    trace('Importing backend.app.database.session...')
+    from backend.app.database import session
+    trace('OK: imported backend.app.database.session')
     
-    print('\n8. Starting Uvicorn programmatically...')
-    import uvicorn
-    # Strip any carriage return from PORT if present
-    port_str = os.environ.get('PORT', '8000').strip()
-    uvicorn.run(app, host='0.0.0.0', port=int(port_str))
-except Exception:
+    trace('Importing backend.app.models.all_models...')
+    from backend.app.models import all_models
+    trace('OK: imported backend.app.models.all_models')
+
+    trace('Importing backend.app.api.v1.auth...')
+    from backend.app.api.v1 import auth
+    trace('OK: imported backend.app.api.v1.auth')
+
+    trace('Importing backend.app.api.v1.documents...')
+    from backend.app.api.v1 import documents
+    trace('OK: imported backend.app.api.v1.documents')
+
+    trace('Importing backend.app.api.v1.chat...')
+    from backend.app.api.v1 import chat
+    trace('OK: imported backend.app.api.v1.chat')
+
+    trace('Importing backend.app.api.v1.retrieval...')
+    from backend.app.api.v1 import retrieval
+    trace('OK: imported backend.app.api.v1.retrieval')
+
+    trace('Importing backend.app.api.v1.__init__...')
+    import backend.app.api.v1
+    trace('OK: imported backend.app.api.v1')
+
+    trace('Importing backend.app.main...')
+    import backend.app.main
+    trace('OK: imported backend.app.main')
+
+    trace('SUCCESS: All imports finished without blocking.')
+except Exception as e:
+    import traceback
+    trace('EXCEPTION CAUGHT:')
     traceback.print_exc()
     sys.exit(1)
 "
