@@ -5,7 +5,7 @@ from rag_chat.llm.gemini_client import (
 
 from rag_chat.config import GEMINI_API_KEY
 
-from tests.sample_data import MOCK_PROMPT
+from rag_chat.tests.sample_data import MOCK_PROMPT
 
 
 def test_gemini_client():

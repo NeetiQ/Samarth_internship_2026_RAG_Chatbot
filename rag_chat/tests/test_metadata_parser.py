@@ -1,6 +1,6 @@
 from rag_chat.citations.metadata_parser import parse_metadata
 
-from tests.sample_data import MOCK_CHUNKS
+from rag_chat.tests.sample_data import MOCK_CHUNKS
 
 
 def test_metadata_parser():
