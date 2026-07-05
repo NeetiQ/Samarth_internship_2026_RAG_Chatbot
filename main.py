@@ -20,3 +20,7 @@ def root():
     return {
         "message": "Retrieval Service is running."
     }
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}

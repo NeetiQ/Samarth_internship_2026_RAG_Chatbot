@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
+from contextlib import asynccontextmanager
 
 from app.core.settings import get_settings
 from app.core.exceptions import (
@@ -56,11 +57,37 @@ def _detect_provider(hostname: str) -> str:
 
 
 def create_app() -> FastAPI:
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        try:
+            parsed = urlparse(settings.DATABASE_URL)
+            db_host = parsed.hostname or "unknown"
+            db_port = parsed.port or 5432
+            db_name = (parsed.path or "").lstrip("/") or "unknown"
+            ssl_enabled = "sslmode" in (parsed.query or "")
+            provider = _detect_provider(db_host)
+
+            logger.info("=" * 60)
+            logger.info("DEPLOYMENT CONFIGURATION")
+            logger.info("=" * 60)
+            logger.info(f"Environment : {settings.ENVIRONMENT}")
+            logger.info(f"DB Host     : {db_host}:{db_port}")
+            logger.info(f"DB Name     : {db_name}")
+            logger.info(f"DB Provider : {provider}")
+            logger.info(f"SSL Enabled : {ssl_enabled}")
+            logger.info(f"Debug Mode  : {settings.DEBUG}")
+            logger.info("=" * 60)
+
+        except Exception as e:
+            logger.warning(f"Could not log deployment info: {e}")
+        yield
+
     app = FastAPI(
         title=settings.PROJECT_NAME,
         openapi_url=f"{settings.API_V1_STR}/openapi.json",
         description="Legal RAG System Backend Foundation",
         version="1.0.0",
+        lifespan=lifespan,
     )
 
     app.add_middleware(
@@ -87,30 +114,7 @@ def create_app() -> FastAPI:
 
     app.include_router(api_router, prefix=settings.API_V1_STR)
 
-    @app.on_event("startup")
-    async def log_deployment_info():
-        try:
-            parsed = urlparse(settings.DATABASE_URL)
 
-            db_host = parsed.hostname or "unknown"
-            db_port = parsed.port or 5432
-            db_name = (parsed.path or "").lstrip("/") or "unknown"
-            ssl_enabled = "sslmode" in (parsed.query or "")
-            provider = _detect_provider(db_host)
-
-            logger.info("=" * 60)
-            logger.info("DEPLOYMENT CONFIGURATION")
-            logger.info("=" * 60)
-            logger.info(f"Environment : {settings.ENVIRONMENT}")
-            logger.info(f"DB Host     : {db_host}:{db_port}")
-            logger.info(f"DB Name     : {db_name}")
-            logger.info(f"DB Provider : {provider}")
-            logger.info(f"SSL Enabled : {ssl_enabled}")
-            logger.info(f"Debug Mode  : {settings.DEBUG}")
-            logger.info("=" * 60)
-
-        except Exception as e:
-            logger.warning(f"Could not log deployment info: {e}")
 
     @app.get("/health", tags=["System"])
     async def health_check():
