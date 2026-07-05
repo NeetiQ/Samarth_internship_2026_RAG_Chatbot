@@ -40,4 +40,5 @@ def generate_response(prompt):
 
 
 def clean_response(response):
+
     return response.strip()
