@@ -5,7 +5,7 @@ import ChatWindow from "../components/chat/ChatWindow";
 import ChatInput from "../components/chat/ChatInput";
 import { useTheme } from "../context/ThemeContext";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 function Chat() {
   const { darkMode } = useTheme();
