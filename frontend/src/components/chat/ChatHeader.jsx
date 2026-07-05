@@ -1,12 +1,19 @@
 import { motion } from "framer-motion";
-import {
-  FiDownload,
-  FiMoreVertical,
-  FiShield,
-} from "react-icons/fi";
+import { FiDownload, FiMoreVertical, FiShield } from "react-icons/fi";
 import { jsPDF } from "jspdf";
 
 function ChatHeader({ messages }) {
+  // ==========================
+  // USER INFO (dynamic)
+  // ==========================
+  const userEmail =
+    localStorage.getItem("userEmail") || "guest@nyayaai.com";
+
+  const username = userEmail.split("@")[0];
+
+  // ==========================
+  // EXPORT CHAT TO PDF
+  // ==========================
   const exportChat = () => {
     const doc = new jsPDF();
 
@@ -30,8 +37,7 @@ function ChatHeader({ messages }) {
       doc.text("No conversation available.", 20, y);
     } else {
       messages.forEach((msg) => {
-        const sender =
-          msg.sender === "user" ? "User" : "NyayaAI";
+        const sender = msg.sender === "user" ? "User" : "NyayaAI";
 
         doc.setFontSize(12);
         doc.setFont(undefined, "bold");
@@ -41,16 +47,11 @@ function ChatHeader({ messages }) {
 
         doc.setFont(undefined, "normal");
 
-        const lines = doc.splitTextToSize(
-          msg.text,
-          170
-        );
-
+        const lines = doc.splitTextToSize(msg.text, 170);
         doc.text(lines, 20, y);
 
         y += lines.length * 7 + 8;
 
-        // New page if needed
         if (y > 270) {
           doc.addPage();
           y = 20;
@@ -58,25 +59,20 @@ function ChatHeader({ messages }) {
       });
     }
 
-    const date = new Date().toLocaleDateString("en-GB").replace(/\//g, "-");
+    const date = new Date()
+      .toLocaleDateString("en-GB")
+      .replace(/\//g, "-");
 
     doc.save(`NyayaAI_Chat_${date}.pdf`);
   };
 
   return (
     <motion.div
-      initial={{
-        opacity: 0,
-        y: -10,
-      }}
-      animate={{
-        opacity: 1,
-        y: 0,
-      }}
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
       className="border-b border-slate-200 bg-white px-6 py-4 flex items-center justify-between"
     >
-      {/* Left */}
-
+      {/* LEFT SIDE */}
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1E3A8A] to-[#2563EB] text-white flex items-center justify-center shadow-md">
           <FiShield size={20} />
@@ -97,9 +93,9 @@ function ChatHeader({ messages }) {
         </div>
       </div>
 
-      {/* Right */}
-
+      {/* RIGHT SIDE */}
       <div className="flex items-center gap-3">
+        {/* Export Button */}
         <button
           onClick={exportChat}
           className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition text-sm"
@@ -108,22 +104,24 @@ function ChatHeader({ messages }) {
           Export
         </button>
 
+        {/* USER INFO (dynamic) */}
         <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-slate-50 border border-slate-200">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#2348C6] to-[#1E3A8A] text-white flex items-center justify-center font-semibold text-sm">
-            NAI
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#2348C6] to-[#1E3A8A] text-white flex items-center justify-center font-semibold text-sm uppercase">
+            {username.charAt(0)}
           </div>
 
           <div>
             <p className="text-sm font-medium text-slate-800">
-              Nyaya User
+              {username}
             </p>
 
             <p className="text-[11px] text-slate-500">
-              Legal Workspace
+              {userEmail}
             </p>
           </div>
         </div>
 
+        {/* MORE BUTTON */}
         <button className="w-9 h-9 rounded-xl border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition">
           <FiMoreVertical size={16} />
         </button>

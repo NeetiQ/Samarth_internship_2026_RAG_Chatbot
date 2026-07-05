@@ -7,8 +7,7 @@ import CaseComparison from "./pages/CaseComparison";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
 import UploadDocuments from "./pages/UploadDocuments";
-import ProtectedRoute from "./components/ProtectedRoute";
-
+import Signup from "./pages/Signup";
 function App() {
   const { darkMode } = useTheme();
 
@@ -22,11 +21,12 @@ function App() {
     >
       <Routes>
         <Route path="/" element={<Login />} />
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/upload-documents" element={<ProtectedRoute><UploadDocuments /></ProtectedRoute>} />
-        <Route path="/compare" element={<ProtectedRoute><CaseComparison /></ProtectedRoute>} />
-        <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/upload-documents" element={<UploadDocuments />} />
+        <Route path="/compare" element={<CaseComparison />} />
+        <Route path="/chat" element={<Chat />} />
+        <Route path="/signup" element={<Signup />} /> 
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </div>
   );

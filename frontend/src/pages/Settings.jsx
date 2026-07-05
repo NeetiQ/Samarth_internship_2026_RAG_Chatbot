@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import Sidebar from "../components/layout/Sidebar";
 import Navbar from "../components/layout/Navbar";
@@ -5,6 +6,15 @@ import { useTheme } from "../context/ThemeContext";
 
 function Settings() {
   const { darkMode, setDarkMode } = useTheme();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [name, setName] = useState("Kairavi Malik");
+
+  const handleSave = () => {
+    // Later you can connect this to your backend API
+    alert("Profile updated successfully!");
+    setIsEditing(false);
+  };
 
   return (
     <div
@@ -38,11 +48,12 @@ function Settings() {
             }`}
           >
             <div className="flex justify-between items-center mb-5">
-              <h2 className="text-2xl font-semibold">
-                Profile
-              </h2>
+              <h2 className="text-2xl font-semibold">Profile</h2>
 
-              <button className="bg-[#2563EB] text-white px-4 py-2 rounded-xl">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="bg-[#2563EB] text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition"
+              >
                 Edit
               </button>
             </div>
@@ -54,28 +65,44 @@ function Settings() {
 
               <div className="grid md:grid-cols-2 gap-4 flex-1">
                 <input
-                  className={`border rounded-xl p-3 ${
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  disabled={!isEditing}
+                  className={`border rounded-xl p-3 transition ${
                     darkMode
                       ? "bg-slate-700 text-white border-slate-600"
+                      : "bg-white"
+                  } ${
+                    !isEditing
+                      ? "opacity-70 cursor-not-allowed"
                       : ""
                   }`}
                   placeholder="Name"
-                  defaultValue="Kairavi Malik"
                 />
 
                 <input
+                  type="email"
+                  value="kairavi@email.com"
+                  readOnly
                   className={`border rounded-xl p-3 ${
                     darkMode
                       ? "bg-slate-700 text-white border-slate-600"
-                      : ""
-                  }`}
-                  placeholder="Email"
-                  defaultValue="kairavi@email.com"
+                      : "bg-white"
+                  } opacity-70 cursor-not-allowed`}
                 />
               </div>
             </div>
 
-            <button className="mt-5 bg-[#D4A017] text-white px-6 py-3 rounded-xl">
+            <button
+              onClick={handleSave}
+              disabled={!isEditing}
+              className={`mt-5 px-6 py-3 rounded-xl text-white transition ${
+                isEditing
+                  ? "bg-[#D4A017] hover:opacity-90"
+                  : "bg-gray-400 cursor-not-allowed"
+              }`}
+            >
               Save Changes
             </button>
           </motion.div>
@@ -108,8 +135,7 @@ function Settings() {
               </div>
             </div>
           </motion.div>
-
-          {/* Security */}
+                   {/* Security */}
           <motion.div
             whileHover={{ y: -4 }}
             className={`rounded-2xl shadow-md p-6 mb-6 ${
@@ -123,7 +149,7 @@ function Settings() {
             <div className="flex justify-between items-center">
               <span>Change Password</span>
 
-              <button className="bg-[#2563EB] text-white px-4 py-2 rounded-xl">
+              <button className="bg-[#2563EB] text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition">
                 Update
               </button>
             </div>
@@ -156,4 +182,4 @@ function Settings() {
   );
 }
 
-export default Settings;
+export default Settings; 
