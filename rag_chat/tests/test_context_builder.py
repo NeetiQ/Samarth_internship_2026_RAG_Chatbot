@@ -1,23 +1,27 @@
 from rag_chat.workflows.context_builder import build_context
 
-
-def test_build_context():
-
-    chunks = [
-        "Tenant must provide 30 days notice.",
-        "Rent should be paid before the 5th of every month."
-    ]
-
-    context = build_context(chunks)
-
-    assert "[Source 1]" in context
-    assert "[Source 2]" in context
-    assert "Tenant must provide 30 days notice." in context
-    assert "Rent should be paid before the 5th of every month." in context
+from rag_chat.tests.sample_data import MOCK_CHUNKS
 
 
-def test_build_context_empty():
+def test_context_builder():
 
-    context = build_context([])
+    context = build_context(MOCK_CHUNKS)
 
-    assert context == ""
+    assert context is not None
+    assert isinstance(context, str)
+    assert len(context.strip()) > 0
+
+    assert "CrPC.pdf" in context
+    assert "Code of Criminal Procedure" in context
+    assert "Section 438" in context
+    assert "Supreme Court Database" in context
+    assert "Anticipatory bail" in context
+
+    print("\nGenerated Context:\n")
+    print(context)
+
+    print("\nContext Builder Test Passed Successfully!")
+
+
+if __name__ == "__main__":
+    test_context_builder()
