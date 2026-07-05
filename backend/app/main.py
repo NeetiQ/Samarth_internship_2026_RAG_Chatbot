@@ -1,12 +1,10 @@
-import builtins
-def _trace(msg):
-    builtins.print(msg, flush=True)
-
-_trace("main.py: Starting imports")
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
 from sqlalchemy import text
-_trace("main.py: Importing settings")
+from sqlalchemy.exc import SQLAlchemyError
+from contextlib import asynccontextmanager
+
 from app.core.settings import get_settings
 from app.core.exceptions import (
     AppException,
@@ -15,24 +13,22 @@ from app.core.exceptions import (
     sqlalchemy_exception_handler,
     general_exception_handler,
 )
+
 import logging
 import os
 from urllib.parse import urlparse
 from dotenv import load_dotenv
 
-# Load environments from multiple sources before other app imports
-_trace("main.py: load_dotenv")
-load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env"), override=False)
+# Load root .env before importing anything that depends on environment variables
+load_dotenv(
+    os.path.join(os.path.dirname(__file__), "../../.env"),
+    override=True,
+)
 
-from fastapi.exceptions import RequestValidationError
-from sqlalchemy.exc import SQLAlchemyError
-_trace("main.py: importing api_router")
 from app.api.v1 import api_router
-_trace("main.py: importing engine")
 from app.database.session import engine
-_trace("main.py: calling get_settings")
+
 settings = get_settings()
-_trace("main.py: got settings")
 
 logger = logging.getLogger("legal-rag")
 
@@ -49,47 +45,20 @@ def _detect_provider(hostname: str) -> str:
         "elephantsql.com": "ElephantSQL",
         "aiven.io": "Aiven",
     }
+
     for hint, name in provider_hints.items():
         if hint in hostname:
             return name
+
     if hostname in ("localhost", "127.0.0.1", "db"):
         return "Local / Docker"
+
     return "Unknown"
 
 
 def create_app() -> FastAPI:
-    _trace("main.py: Entering create_app")
-    app = FastAPI(
-        title=settings.PROJECT_NAME,
-        openapi_url=f"{settings.API_V1_STR}/openapi.json",
-        description="Legal RAG System Backend Foundation",
-        version="1.0.0",
-    )
-
-    # Middleware
-    _trace("main.py: Adding CORSMiddleware")
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    # Exception Handlers
-    _trace("main.py: Adding exception handlers")
-    app.add_exception_handler(AppException, app_exception_handler)
-    app.add_exception_handler(RequestValidationError, validation_exception_handler)
-    app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
-    app.add_exception_handler(Exception, general_exception_handler)
-
-    # Include routers
-    _trace("main.py: Including API routers")
-    app.include_router(api_router, prefix=settings.API_V1_STR)
-
-    @app.on_event("startup")
-    async def log_deployment_info():
-        """Log deployment configuration on startup (never logs passwords)."""
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
         try:
             parsed = urlparse(settings.DATABASE_URL)
             db_host = parsed.hostname or "unknown"
@@ -101,35 +70,80 @@ def create_app() -> FastAPI:
             logger.info("=" * 60)
             logger.info("DEPLOYMENT CONFIGURATION")
             logger.info("=" * 60)
-            logger.info(f"  Environment : {settings.ENVIRONMENT}")
-            logger.info(f"  DB Host     : {db_host}:{db_port}")
-            logger.info(f"  DB Name     : {db_name}")
-            logger.info(f"  DB Provider : {provider}")
-            logger.info(f"  SSL Enabled : {ssl_enabled}")
-            logger.info(f"  Debug Mode  : {settings.DEBUG}")
+            logger.info(f"Environment : {settings.ENVIRONMENT}")
+            logger.info(f"DB Host     : {db_host}:{db_port}")
+            logger.info(f"DB Name     : {db_name}")
+            logger.info(f"DB Provider : {provider}")
+            logger.info(f"SSL Enabled : {ssl_enabled}")
+            logger.info(f"Debug Mode  : {settings.DEBUG}")
             logger.info("=" * 60)
+
         except Exception as e:
             logger.warning(f"Could not log deployment info: {e}")
+        yield
+
+    app = FastAPI(
+        title=settings.PROJECT_NAME,
+        openapi_url=f"{settings.API_V1_STR}/openapi.json",
+        description="Legal RAG System Backend Foundation",
+        version="1.0.0",
+        lifespan=lifespan,
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    app.add_exception_handler(AppException, app_exception_handler)
+    app.add_exception_handler(
+        RequestValidationError,
+        validation_exception_handler,
+    )
+    app.add_exception_handler(
+        SQLAlchemyError,
+        sqlalchemy_exception_handler,
+    )
+    app.add_exception_handler(
+        Exception,
+        general_exception_handler,
+    )
+
+    app.include_router(api_router, prefix=settings.API_V1_STR)
+
+
 
     @app.get("/health", tags=["System"])
     async def health_check():
-        return {"status": "ok", "project": settings.PROJECT_NAME}
+        return {
+            "status": "ok",
+            "project": settings.PROJECT_NAME,
+        }
 
     @app.get("/ready", tags=["System"])
     async def readiness_check():
         try:
             async with engine.connect() as conn:
                 await conn.execute(text("SELECT 1"))
-                # Removed PGVector check. Pinecone is now used for vector storage.
-            return {"status": "ready", "project": settings.PROJECT_NAME}
+
+            return {
+                "status": "ready",
+                "project": settings.PROJECT_NAME,
+            }
+
         except HTTPException:
             raise
-        except Exception:
-            raise HTTPException(status_code=503, detail="Database not ready")
 
-    _trace("main.py: Exiting create_app")
+        except Exception:
+            raise HTTPException(
+                status_code=503,
+                detail="Database not ready",
+            )
+
     return app
 
-_trace("main.py: Calling create_app()")
+
 app = create_app()
-_trace("main.py: Initialization complete.")

@@ -7,7 +7,6 @@ import UploadDropzone from "../components/upload/UploadDropzone";
 import UploadedDocuments from "../components/upload/UploadedDocuments";
 
 import { useTheme } from "../context/ThemeContext";
-import { authFetch } from "../services/api";
 
 function UploadDocuments() {
   const { darkMode } = useTheme();
@@ -57,46 +56,24 @@ function UploadDocuments() {
   ]);
 
   // Handle uploaded files
-  const handleFilesUpload = async (selectedFiles) => {
+  const handleFilesUpload = (selectedFiles) => {
     const uploadedFiles = Array.from(selectedFiles).map((file) => ({
-      id: Date.now().toString() + Math.random().toString(36).substring(7),
+      id: crypto.randomUUID(),
+
       type: file.name.split(".").pop().toUpperCase(),
+
       name: file.name,
+
       size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+
       time: "Just now",
+
       status: "Uploading",
+
       progress: 0,
     }));
 
     setFiles((prev) => [...uploadedFiles, ...prev]);
-
-    for (let i = 0; i < selectedFiles.length; i++) {
-      const file = selectedFiles[i];
-      const formData = new FormData();
-      formData.append("file", file);
-
-      try {
-        const response = await authFetch("/api/v1/documents/upload", {
-          method: "POST",
-          body: formData,
-        });
-        
-        if (response.ok) {
-          setFiles((prev) => 
-            prev.map(f => f.name === file.name ? { ...f, status: "Analyzing" } : f)
-          );
-        } else {
-          setFiles((prev) => 
-            prev.map(f => f.name === file.name ? { ...f, status: "Failed" } : f)
-          );
-        }
-      } catch (error) {
-        console.error("Upload error:", error);
-        setFiles((prev) => 
-          prev.map(f => f.name === file.name ? { ...f, status: "Failed" } : f)
-        );
-      }
-    }
   };
 
   return (
