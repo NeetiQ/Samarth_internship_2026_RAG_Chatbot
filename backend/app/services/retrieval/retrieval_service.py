@@ -64,7 +64,9 @@ class RetrievalService:
         Settings.PINECONE_API_KEY = app_settings.PINECONE_API_KEY
         Settings.PINECONE_INDEX_NAME = app_settings.PINECONE_INDEX
         
-        self.retriever = get_cached_retriever()
+        from app.core.diagnostic_logger import Profiler
+        with Profiler("RetrievalService.get_cached_retriever"):
+            self.retriever = get_cached_retriever()
 
     async def full_retrieve(self, query: str, top_k: int = 5) -> List[RetrievalResult]:
         # Team B's retriever is synchronous, run in executor

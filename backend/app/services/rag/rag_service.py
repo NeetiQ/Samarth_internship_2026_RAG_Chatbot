@@ -30,8 +30,10 @@ class RagService:
         loop = asyncio.get_event_loop()
         
         def run_pipeline():
+            from app.core.diagnostic_logger import Profiler
             # 1. Retrieve
-            results_dicts = self.retrieval_service.retriever.retrieve(query, top_k=5)
+            with Profiler("retriever.retrieve"):
+                results_dicts = self.retrieval_service.retriever.retrieve(query, top_k=5)
 
             print("\n" + "=" * 80)
             print("Retrieved", len(results_dicts), "chunks")
@@ -58,19 +60,21 @@ class RagService:
             ]
             
             # 2. Build Prompt
-            prompt = build_prompt(question=query, context=chunks_text, history=history)
+            with Profiler("build_prompt"):
+                prompt = build_prompt(question=query, context=chunks_text, history=history)
             print("\nPROMPT SENT TO GEMINI")
             print("=" * 80)
             print(prompt)
             print("=" * 80)
             
             # 3. Generate Answer
-            try:
-                answer = gemini_generate(prompt)
-            except ValueError as e:
-                raise HTTPException(status_code=503, detail=f"LLM Configuration Error: {str(e)}")
-            except Exception as e:
-                raise HTTPException(status_code=503, detail=f"Gemini unavailable: {str(e)}")
+            with Profiler("gemini_generate"):
+                try:
+                    answer = gemini_generate(prompt)
+                except ValueError as e:
+                    raise HTTPException(status_code=503, detail=f"LLM Configuration Error: {str(e)}")
+                except Exception as e:
+                    raise HTTPException(status_code=503, detail=f"Gemini unavailable: {str(e)}")
             return answer, citations
             
         answer, citations = await loop.run_in_executor(None, run_pipeline)

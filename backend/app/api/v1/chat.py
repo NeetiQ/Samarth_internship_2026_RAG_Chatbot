@@ -27,43 +27,52 @@ async def chat(
     rag_service: RagService = Depends(get_rag_service)
 ):
     """Team C: Main chat endpoint with RAG context."""
-    # If session_id provided, verify ownership
-    if request.session_id:
-        session = await chat_session_repo.get_user_session(
-            rag_service.db, request.session_id, current_user.id
-        )
-        if not session:
-            raise HTTPException(status_code=403, detail="Chat session not found or access denied")
+    from app.core.diagnostic_logger import Profiler
     
-    # Simplified context & history gathering for integration
-    history = await rag_service.get_history(request.session_id) if request.session_id else []
-    context = [] # Let pipeline handle retrieval directly!
-    
-    try:
-        response_msg, citations = await rag_service.generate_response(request.message, context, history)
-    except HTTPException:
-        raise
-    except ValueError as e:
-        if "GEMINI_API_KEY" in str(e):
-            raise HTTPException(status_code=503, detail="GEMINI_API_KEY not configured or invalid.")
-        raise HTTPException(status_code=500, detail=str(e))
-    except Exception as e:
-        if "API_KEY_INVALID" in str(e) or "API key not valid" in str(e):
-             raise HTTPException(status_code=503, detail="GEMINI_API_KEY not configured or invalid.")
-        raise HTTPException(status_code=500, detail=str(e))
-    
-    # Return formatted response
-    return ChatResponse(
-        session_id=request.session_id or 0,
-        message=ChatMessageResponse(
-            id=0,
-            session_id=request.session_id or 0,
-            role=response_msg.role,
-            content=response_msg.content,
-            created_at=response_msg.created_at or datetime.utcnow(),
-            citations=citations
-        )
-    )
+    with Profiler("Entering chat endpoint POST /api/v1/chat"):
+        # If session_id provided, verify ownership
+        if request.session_id:
+            with Profiler("Chat session lookup"):
+                session = await chat_session_repo.get_user_session(
+                    rag_service.db, request.session_id, current_user.id
+                )
+            if not session:
+                raise HTTPException(status_code=403, detail="Chat session not found or access denied")
+        
+        # Simplified context & history gathering for integration
+        with Profiler("Chat history lookup"):
+            history = await rag_service.get_history(request.session_id) if request.session_id else []
+        context = [] # Let pipeline handle retrieval directly!
+        
+        try:
+            with Profiler("rag_service.generate_response"):
+                response_msg, citations = await rag_service.generate_response(request.message, context, history)
+        except HTTPException:
+            raise
+        except ValueError as e:
+            if "GEMINI_API_KEY" in str(e):
+                raise HTTPException(status_code=503, detail="GEMINI_API_KEY not configured or invalid.")
+            raise HTTPException(status_code=500, detail=str(e))
+        except Exception as e:
+            import logging
+            logging.getLogger("legal-rag-diagnostics").exception("Fatal exception in generate_response")
+            if "API_KEY_INVALID" in str(e) or "API key not valid" in str(e):
+                 raise HTTPException(status_code=503, detail="GEMINI_API_KEY not configured or invalid.")
+            raise HTTPException(status_code=500, detail=str(e))
+        
+        with Profiler("Returning HTTP response"):
+            # Return formatted response
+            return ChatResponse(
+                session_id=request.session_id or 0,
+                message=ChatMessageResponse(
+                    id=0,
+                    session_id=request.session_id or 0,
+                    role=response_msg.role,
+                    content=response_msg.content,
+                    created_at=response_msg.created_at or datetime.utcnow(),
+                    citations=citations
+                )
+            )
 
 @router.post("/history", response_model=ChatSessionResponse)
 async def create_chat_session(

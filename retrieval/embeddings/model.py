@@ -21,22 +21,30 @@ class EmbeddingModel:
         Returns the shared embedding model instance.
         """
         if cls._model is None:
-            from sentence_transformers import SentenceTransformer
-            
-            print("=" * 60)
-            print(f"Loading Embedding Model : {Settings.EMBEDDING_MODEL}")
-            print(f"Embedding Dimension     : {Settings.EMBEDDING_DIMENSION}")
-            print("=" * 60)
+            import sys
+            import os
+            sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
+            from backend.app.core.diagnostic_logger import Profiler
 
-            try:
-                cls._model = SentenceTransformer(
-                    Settings.EMBEDDING_MODEL
-                )
-                print("Embedding model loaded successfully.\n")
+            with Profiler("Loading SentenceTransformer"):
+                from sentence_transformers import SentenceTransformer
+                
+                print("=" * 60)
+                print(f"Loading Embedding Model : {Settings.EMBEDDING_MODEL}")
+                print(f"Embedding Dimension     : {Settings.EMBEDDING_DIMENSION}")
+                print("=" * 60)
 
-            except Exception as error:
-                raise RuntimeError(
-                    f"Failed to load embedding model: {error}"
-                ) from error
+                try:
+                    cls._model = SentenceTransformer(
+                        Settings.EMBEDDING_MODEL
+                    )
+                    print("Embedding model loaded successfully.\n")
+
+                except Exception as error:
+                    import logging
+                    logging.getLogger("legal-rag-diagnostics").exception(f"Failed to load embedding model: {error}")
+                    raise RuntimeError(
+                        f"Failed to load embedding model: {error}"
+                    ) from error
 
         return cls._model
