@@ -5,8 +5,9 @@ import { useNavigate } from "react-router-dom";
 export default function Signup() {
   const navigate = useNavigate();
 
-  const API_URL = "http://localhost:8000";
+  const API_URL = import.meta.env.VITE_API_URL;
 
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,6 +26,7 @@ export default function Signup() {
         body: JSON.stringify({
           email,
           password,
+          full_name: fullName,
         }),
       });
 
@@ -72,6 +74,19 @@ export default function Signup() {
         </h2>
 
         <form onSubmit={handleSignup}>
+
+          <input
+            type="text"
+            placeholder="Full Name"
+            value={fullName}
+            required
+            onChange={(e) => setFullName(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "12px",
+              marginBottom: "15px",
+            }}
+          />
 
           <input
             type="email"
@@ -134,4 +149,3 @@ export default function Signup() {
     </div>
   );
 }
-
