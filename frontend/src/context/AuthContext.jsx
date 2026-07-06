@@ -4,37 +4,31 @@ const AuthContext = createContext(null);
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
+const fetchMe = async (accessToken) => {
+  const res = await fetch(`${API_URL}/api/v1/auth/me`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) throw new Error("Invalid token");
+  return res.json();
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem("auth_token"));
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !!localStorage.getItem("auth_token"));
 
-  // Validate existing token on mount
   useEffect(() => {
-    if (token) {
-      fetchMe(token)
-        .then((userData) => {
-          setUser(userData);
-        })
-        .catch(() => {
-          // Token invalid/expired — clear it
-          localStorage.removeItem("auth_token");
-          setToken(null);
-          setUser(null);
-        })
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!token) return;
 
-  const fetchMe = async (accessToken) => {
-    const res = await fetch(`${API_URL}/api/v1/auth/me`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    if (!res.ok) throw new Error("Invalid token");
-    return res.json();
-  };
+    fetchMe(token)
+      .then((userData) => setUser(userData))
+      .catch(() => {
+        localStorage.removeItem("auth_token");
+        setToken(null);
+        setUser(null);
+      })
+      .finally(() => setLoading(false));
+  }, [token]);
 
   const login = useCallback(async (email, password) => {
     const res = await fetch(`${API_URL}/api/v1/auth/login`, {
@@ -92,21 +86,14 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        token,
-        loading,
-        isAuthenticated,
-        login,
-        signup,
-        logout,
-      }}
+      value={{ user, token, loading, isAuthenticated, login, signup, logout }}
     >
       {children}
     </AuthContext.Provider>
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");

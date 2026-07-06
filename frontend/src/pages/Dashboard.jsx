@@ -3,7 +3,7 @@ import Navbar from "../components/layout/Navbar";
 import HeroCard from "../components/dashboard/HeroCard";
 import StatsCard from "../components/dashboard/StatsCard";
 import TimelineCard from "../components/dashboard/TimelineCard";
-import ConfidenceMeter from "../components/dashboard/ConfidenceMeter";
+
 import ActivityChart from "../components/dashboard/ActivityChart";
 import { useTheme } from "../context/ThemeContext";
 

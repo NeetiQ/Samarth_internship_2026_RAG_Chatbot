@@ -1,20 +1,12 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
-
-import { FiPaperclip, FiSend, FiMic } from "react-icons/fi";
-
-import UploadMenu from "./UploadMenu";
+import { FiSend } from "react-icons/fi";
 import { useTheme } from "../../context/ThemeContext";
 
 function ChatInput({ onSend, onQuickAction }) {
   const { darkMode } = useTheme();
 
   const [message, setMessage] = useState("");
-  const [showMenu, setShowMenu] = useState(false);
-
-  const pdfInputRef = useRef(null);
-  const imageInputRef = useRef(null);
-  const caseInputRef = useRef(null);
 
   const handleSend = () => {
     if (!message.trim()) return;
