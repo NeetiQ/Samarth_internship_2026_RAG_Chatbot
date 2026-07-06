@@ -17,15 +17,19 @@ class PineconeService:
     """
 
     def __init__(self):
+        import builtins
+        builtins.print("PineconeService.__init__: initializing", flush=True)
         try:
             self.pc = Pinecone(api_key=settings.PINECONE_API_KEY)
+            builtins.print("PineconeService.__init__: pc created", flush=True)
             self.index_name = settings.PINECONE_INDEX
             self.index = self.pc.Index(self.index_name)
+            builtins.print("PineconeService.__init__: index loaded", flush=True)
             self.namespace = settings.PINECONE_NAMESPACE
         except Exception as e:
             logger.error(f"Failed to initialize Pinecone: {e}")
             raise
-
+        builtins.print("PineconeService.__init__: Done", flush=True)
     @classmethod
     def get_instance(cls):
         if not hasattr(cls, "_instance"):

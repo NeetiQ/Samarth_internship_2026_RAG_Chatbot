@@ -1,4 +1,4 @@
-from app.models.all_models import (
+from .all_models import (
     User,
     Document,
     Chunk,

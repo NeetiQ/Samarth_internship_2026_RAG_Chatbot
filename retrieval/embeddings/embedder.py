@@ -16,8 +16,13 @@ class Embedder:
     """
 
     def __init__(self):
-        """Initialize the embedding model."""
-        self._model = EmbeddingModel.get_model()
+        """Initialize the embedder."""
+        pass
+
+    @property
+    def _model(self):
+        """Lazy load the embedding model."""
+        return EmbeddingModel.get_model()
 
     def encode(self, text: str) -> List[float]:
         """

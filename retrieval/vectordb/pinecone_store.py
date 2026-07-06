@@ -15,13 +15,8 @@ class PineconeStore:
     """
 
     def __init__(self):
-
-        self.pc = Pinecone(
-            api_key=Settings.PINECONE_API_KEY
-        )
-
+        self.pc = Pinecone(api_key=Settings.PINECONE_API_KEY)
         self.index_name = Settings.PINECONE_INDEX_NAME
-
         self._create_index()
 
         self.index = self.pc.Index(

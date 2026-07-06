@@ -36,4 +36,5 @@ python backend/scripts/seed_corpus.py || {
 }
 
 echo "Starting API server..."
-exec uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+cd /app/backend
+exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}

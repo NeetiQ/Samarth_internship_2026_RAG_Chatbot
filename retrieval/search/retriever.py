@@ -12,7 +12,7 @@ from retrieval.vectordb.pinecone_store import PineconeStore
 
 class Retriever:
     """
-    Handles semantic retrieval.
+    Orchestrates semantic search and hybrid search.
     """
 
     def __init__(self):

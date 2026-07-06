@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
+from contextlib import asynccontextmanager
 
 from app.core.settings import get_settings
 from app.core.exceptions import (
@@ -56,43 +57,10 @@ def _detect_provider(hostname: str) -> str:
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(
-        title=settings.PROJECT_NAME,
-        openapi_url=f"{settings.API_V1_STR}/openapi.json",
-        description="Legal RAG System Backend Foundation",
-        version="1.0.0",
-    )
-
-    # Middleware
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    # Exception handlers
-    app.add_exception_handler(AppException, app_exception_handler)
-    app.add_exception_handler(
-        RequestValidationError,
-        validation_exception_handler,
-    )
-    app.add_exception_handler(
-        SQLAlchemyError,
-        sqlalchemy_exception_handler,
-    )
-    app.add_exception_handler(Exception, general_exception_handler)
-
-    # Routes
-    app.include_router(api_router, prefix=settings.API_V1_STR)
-
-    @app.on_event("startup")
-    async def log_deployment_info():
-        """Log deployment configuration on startup."""
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
         try:
             parsed = urlparse(settings.DATABASE_URL)
-
             db_host = parsed.hostname or "unknown"
             db_port = parsed.port or 5432
             db_name = (parsed.path or "").lstrip("/") or "unknown"
@@ -112,6 +80,47 @@ def create_app() -> FastAPI:
 
         except Exception as e:
             logger.warning(f"Could not log deployment info: {e}")
+        yield
+
+    app = FastAPI(
+        title=settings.PROJECT_NAME,
+        openapi_url=f"{settings.API_V1_STR}/openapi.json",
+        description="Legal RAG System Backend Foundation",
+        version="1.0.0",
+        lifespan=lifespan,
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "http://localhost:5173",
+            "http://localhost:8000",
+            "http://localhost",
+            "https://samarth-internship-2026-rag-chatbot.vercel.app",
+            "https://samarth-internship-2026-rag-chatbot-dgxzw5len.vercel.app"
+        ],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    app.add_exception_handler(AppException, app_exception_handler)
+    app.add_exception_handler(
+        RequestValidationError,
+        validation_exception_handler,
+    )
+    app.add_exception_handler(
+        SQLAlchemyError,
+        sqlalchemy_exception_handler,
+    )
+    app.add_exception_handler(
+        Exception,
+        general_exception_handler,
+    )
+
+    app.include_router(api_router, prefix=settings.API_V1_STR)
+
+
 
     @app.get("/health", tags=["System"])
     async def health_check():

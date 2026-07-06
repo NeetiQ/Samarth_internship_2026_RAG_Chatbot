@@ -5,6 +5,9 @@ from rag_chat.config import RETRIEVAL_API_URL
 
 def retrieve_context(question, top_k=5):
 
+    if not RETRIEVAL_API_URL:
+        raise ValueError("RETRIEVAL_API_URL not configured.")
+
     payload = {
         "query": question,
         "top_k": top_k
@@ -20,9 +23,7 @@ def retrieve_context(question, top_k=5):
 
         response.raise_for_status()
 
-        retrieved_data = response.json()
-
-        return retrieved_data
+        return response.json()
 
     except requests.exceptions.RequestException as e:
 
