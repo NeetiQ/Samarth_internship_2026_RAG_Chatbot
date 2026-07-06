@@ -40,12 +40,14 @@ venv.bak/
 .DS_Store
 
 # Environment
+env
 .env
 .env.local
 .env.*.local
 frontend/.env
 frontend/.env.local
 ragchat.env
+embeding_updated.env
 TeamA_TeamB_Merged.env
 
 # Generated data artifacts

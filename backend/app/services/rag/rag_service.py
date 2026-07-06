@@ -32,6 +32,20 @@ class RagService:
         def run_pipeline():
             # 1. Retrieve
             results_dicts = self.retrieval_service.retriever.retrieve(query, top_k=5)
+
+            print("\n" + "=" * 80)
+            print("Retrieved", len(results_dicts), "chunks")
+
+            for i, r in enumerate(results_dicts, 1):
+                print(f"\nChunk {i}")
+                print("Chunk ID:", r.get("chunk_id"))
+                print("Score:", r.get("score"))
+                print("Metadata keys:", list((r.get("metadata") or {}).keys()))
+                print("Page Content:")
+                print(r.get("page_content", "")[:500])
+
+            print("=" * 80)
+
             chunks_text = "\n".join([r.get("page_content", "") for r in results_dicts])
             citations = [
                 CitationResponse(
@@ -45,6 +59,10 @@ class RagService:
             
             # 2. Build Prompt
             prompt = build_prompt(question=query, context=chunks_text, history=history)
+            print("\nPROMPT SENT TO GEMINI")
+            print("=" * 80)
+            print(prompt)
+            print("=" * 80)
             
             # 3. Generate Answer
             try:
