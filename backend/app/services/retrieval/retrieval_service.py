@@ -2,16 +2,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from urllib.parse import parse_qs, unquote, urlparse
 from app.schemas.chunk import RetrievalResult
+from functools import lru_cache
 
 import sys
 import os
 
 # Add root of the project to path for Team B's scripts
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../..")))
-from retrieval.search.retriever import Retriever
 
 DEFAULT_POSTGRES_PORT = 5432
 
+@lru_cache(maxsize=1)
+def get_cached_retriever():
+    from retrieval.search.retriever import Retriever
+    return Retriever()
 
 def apply_database_url_settings(db_url: str, settings) -> None:
     parsed_url = urlparse(db_url)
@@ -57,8 +61,10 @@ class RetrievalService:
             Settings.DB_NAME = "legal_rag"
             
         Settings.TOP_K = 5
+        Settings.PINECONE_API_KEY = app_settings.PINECONE_API_KEY
+        Settings.PINECONE_INDEX_NAME = app_settings.PINECONE_INDEX
         
-        self.retriever = Retriever()
+        self.retriever = get_cached_retriever()
 
     async def full_retrieve(self, query: str, top_k: int = 5) -> List[RetrievalResult]:
         # Team B's retriever is synchronous, run in executor
