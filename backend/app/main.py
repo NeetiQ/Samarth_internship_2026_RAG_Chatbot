@@ -92,7 +92,12 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=[
+            "http://localhost:5173",
+            "http://localhost:8000",
+            "http://localhost",
+            "https://samarth-internship-2026-rag-chatbot.vercel.app"
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
