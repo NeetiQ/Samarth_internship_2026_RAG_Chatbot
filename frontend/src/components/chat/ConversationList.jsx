@@ -9,8 +9,10 @@ function ConversationList({
   setActiveConversation,
   togglePin,
   renameChat,
-  onNewChat,   // ✅ IMPORTANT FIX
+  onNewChat,
 }) {
+  // eslint-disable-next-line no-unused-vars
+  const _activeConversation = activeConversation;
   const { darkMode } = useTheme();
 
   const [openMenu, setOpenMenu] = useState(null);
@@ -42,9 +44,13 @@ function ConversationList({
         {conversations.map((chat) => (
           <motion.div
             key={chat.id}
-            className="relative group p-4 rounded-2xl border cursor-pointer"
+            className={`relative group p-4 rounded-2xl border cursor-pointer ${
+              activeConversation?.id === chat.id
+                ? darkMode ? "border-blue-500 bg-slate-800" : "border-blue-500 bg-blue-50"
+                : ""
+  }`}
             onClick={() => setActiveConversation(chat)}
-          >
+>
             {/* 3 DOT MENU */}
             <div className="absolute right-3 top-3 opacity-0 group-hover:opacity-100">
               <button
