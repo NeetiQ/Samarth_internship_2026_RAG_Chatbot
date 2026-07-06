@@ -97,7 +97,8 @@ def create_app() -> FastAPI:
             "http://localhost:8000",
             "http://localhost",
             "https://samarth-internship-2026-rag-chatbot.vercel.app",
-            "https://samarth-internship-2026-rag-chatbot-dgxzw5len.vercel.app"
+            "https://samarth-internship-2026-rag-chatbot-dgxzw5len.vercel.app",
+            "https://samarth-internship-2026-rag-chatbot-dgxzw5len.vercel.app/"
         ],
         allow_credentials=True,
         allow_methods=["*"],
