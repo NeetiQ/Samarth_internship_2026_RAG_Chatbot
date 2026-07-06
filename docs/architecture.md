@@ -1,193 +1,226 @@
 # Architecture Overview
 
-TBD - Add system architecture and design documentation here.
+## System Architecture
+
+NyayaAI is a Legal RAG (Retrieval-Augmented Generation) system that enables users to upload legal documents, search through them semantically, and chat with an AI assistant that provides cited, context-aware answers grounded in the uploaded corpus.
+
+```
+┌─────────────────┐     ┌──────────────────────┐     ┌─────────────────┐
+│   Frontend      │────▶│   Backend (FastAPI)   │────▶│   PostgreSQL    │
+│   React + Vite  │◀────│   REST API            │◀────│   (Render)      │
+│   (Vercel)      │     │   (Render)            │     └─────────────────┘
+└─────────────────┘     └──────────┬───────────┘
+                                   │
+                        ┌──────────┴───────────┐
+                        │                      │
+                   ┌────▼────┐          ┌──────▼──────┐
+                   │ Pinecone│          │ Google       │
+                   │ VectorDB│          │ Gemini LLM   │
+                   └─────────┘          └──────────────┘
+```
 
 ## Component Architecture
 
-### 1. Ingestion Pipeline (Team A: legal-rag/ingestion/)
+### 1. Ingestion Pipeline (`legal-rag/extracted/`, `legal-rag/chunking/`, `legal-rag/ingestion/`)
 
 **Purpose**: Convert raw legal documents into searchable chunks with metadata.
 
 **Flow**:
 ```
-PDF/Document → PDF Loader → OCR (if needed) → Preprocessing → 
-Chunking → Metadata Extraction → Vector DB
+PDF/Document → PDF Extraction (PyMuPDF) → Text Cleaning →
+Chunking (LangChain) → Metadata Extraction → Embedding Generation →
+Pinecone Upload
 ```
 
 **Components**:
-- `pdf_loader/`: Handles PDF extraction and text parsing
-- `ocr/`: Pytesseract/PaddleOCR for scanned documents
-- `preprocessing/`: Normalization, cleaning, entity extraction
-- `chunking/`: Intelligent splitting with overlap strategy
-- `metadata/`: Extract case info, dates, parties, document type
+- `extracted/`: PDF extraction, text cleaning, metadata loading, and the full extraction pipeline
+- `chunking/`: Configurable chunking with LangChain text splitters
+- `ingestion/outputs/pinecone/`: Upload embeddings to Pinecone vector database
 
-**Output**: 
-- Chunks stored in `outputs/chunks/` (JSON)
-- Metadata stored in `outputs/metadata/` (JSON/CSV)
+**Output**:
+- Vectors stored in Pinecone with chunk text and metadata
+- Document metadata stored in PostgreSQL
 
-### 2. Retrieval Pipeline (Team B: legal-rag/retrieval/)
+### 2. Retrieval Pipeline (`legal-rag/retrieval/`)
 
 **Purpose**: Enable semantic search over ingested documents.
 
 **Flow**:
 ```
-User Query → Query Embedding → Vector Search → 
-Reranking → Retrieved Documents → Return to Chat
+User Query → Query Embedding (all-MiniLM-L6-v2) → Pinecone Vector Search →
+Reranking (Cross-encoder) → Retrieved Documents → Return to Chat
 ```
 
 **Components**:
-- `embeddings/`: Generate embeddings (OpenAI, Sentence-Transformers)
-- `vectordb/`: Manage vector storage (Pinecone, Milvus, Weaviate)
-- `search/`: BM25 + semantic search hybrid approach
+- `embeddings/`: Sentence-Transformers embedding generation (default: `all-MiniLM-L6-v2`, 384 dimensions)
+- `vectordb/pinecone_store.py`: Pinecone client for vector CRUD operations
+- `search/retriever.py`: Semantic search with configurable top-k
 - `reranker/`: Cross-encoder reranking for relevance
-- `pipelines/`: Orchestrate search workflows
+- `pipelines/retrieval_service.py`: Orchestrates the full retrieval workflow
 
-### 3. Chat & Reasoning (Team C: legal-rag/rag_chat/)
+### 3. Chat & Reasoning (`legal-rag/rag_chat/`)
 
-**Purpose**: Generate accurate, cited responses using LLM + retrieved context.
+**Purpose**: Generate accurate, cited responses using Google Gemini + retrieved context.
 
 **Flow**:
 ```
-Retrieved Documents + Query → Prompt Engineering → 
-LLM Generation → Citation Extraction → Response
+Retrieved Documents + Query → Context Building → System Prompt Engineering →
+Gemini LLM Generation → Citation Extraction → Response
 ```
 
 **Components**:
-- `llm/`: LLM interface (OpenAI, Anthropic, HuggingFace)
-- `prompts/`: System prompts, few-shot examples, templates
-- `citations/`: Extract and format source citations
-- `workflows/`: Multi-turn conversation state management
+- `llm/gemini_client.py`: Google Gemini API client via `google-genai` SDK
+- `prompts/`: System prompts and history formatter for legal domain
+- `citations/`: Citation extraction and metadata parsing from LLM output
+- `workflows/`: RAG pipeline orchestration, context building, and retrieval connector
 
-### 4. Frontend (Team D: legal-rag/frontend/)
+### 4. Frontend (`legal-rag/frontend/`)
 
-**Purpose**: User interface for document upload and chat.
+**Purpose**: User interface for authentication, document upload, and chat.
+
+**Technology**: React 19 + Vite + Tailwind CSS v4 + React Router v7
+
+**Deployment**: Vercel (https://samarth-internship-2026-rag-chatbot.vercel.app)
+
+**Pages & Routes**:
+| Route                | Page               | Description                        |
+| -------------------- | ------------------ | ---------------------------------- |
+| `/`                  | Login              | User authentication                |
+| `/signup`            | Signup             | New user registration              |
+| `/dashboard`         | Dashboard          | Stats overview and hero card       |
+| `/chat`              | Chat               | AI chat with RAG-powered responses |
+| `/upload-documents`  | Upload Documents   | Document upload interface          |
+| `/compare`           | Case Comparison    | Side-by-side case comparison       |
+| `/settings`          | Settings           | User preferences and theme toggle  |
+
+**Key Components**:
+- `components/chat/`: ChatWindow, ChatInput, ChatHeader, MessageBubble, ConversationList
+- `components/dashboard/`: HeroCard
+- `components/layout/`: Navbar with responsive sidebar navigation
+- `context/`: AuthContext (JWT auth), ThemeContext (dark/light mode)
+- `services/api.js`: Axios-based API client pointing to backend
+
+### 5. Backend API (`legal-rag/backend/`)
+
+**Purpose**: REST API orchestrating authentication, document management, retrieval, and chat.
+
+**Technology**: Python, FastAPI, Pydantic, SQLAlchemy (async), Alembic
+
+**Deployment**: Render (https://legal-rag-backend-zf50.onrender.com)
+
+**API Prefix**: `/api/v1`
+
+**Route Groups**:
+- `/api/v1/auth` — JWT-based authentication (login, signup, token refresh)
+- `/api/v1/documents` — Document upload, listing, details, processing status
+- `/api/v1/extraction` — Manual re-trigger of ingestion pipeline
+- `/api/v1/retrieval` — Semantic similarity search over chunks
+- `/api/v1/chat` — RAG-powered chat, session management, query rewriting
+- `/health` — Liveness probe
+- `/ready` — Readiness probe (includes DB connectivity check)
 
 **Structure**:
 ```
-App
-├── Components
-│   ├── Chat: Message display, input, streaming
-│   ├── Upload: Document drop zone, progress
-│   ├── Citations: Display retrieved sources
-│   ├── Dashboard: Stats, document list
-│   └── Common: Header, layout, utilities
-├── Hooks: Custom hooks for API calls, state
-├── Services: API client, authentication
-└── Styles: Global styles, themes
+backend/
+├── app/
+│   ├── main.py              # FastAPI app factory with CORS, lifespan, error handlers
+│   ├── api/v1/              # Route handlers (auth, chat, documents, extraction, retrieval)
+│   ├── schemas/             # Pydantic request/response models
+│   ├── services/            # Business logic (vector/pinecone_service)
+│   ├── core/                # Settings, exceptions, logging
+│   ├── database/            # SQLAlchemy session and engine
+│   ├── dependencies/        # Auth dependency injection
+│   └── models/              # SQLAlchemy ORM models
+├── alembic/                 # Database migrations
+├── Dockerfile               # Multi-stage production Dockerfile
+└── requirements.txt         # Python dependencies
 ```
-
-### 5. Backend API (legal-rag/backend/)
-
-**Purpose**: REST API orchestrating all operations.
-
-**Endpoints**:
-- `POST /api/chat`: Send message, get response
-- `POST /api/ingest`: Upload and process document
-- `GET /api/retrieval`: Search documents
-- `GET /health`: Health check
-
-**Structure**:
-```
-app/
-├── main.py: FastAPI app initialization
-├── api/: Route handlers
-├── schemas/: Pydantic models for validation
-├── services/: Business logic
-├── core/: Config, logging, database
-└── tests/: Unit and integration tests
-```
-
-### 6. Deployment (Team E: legal-rag/deployment/)
-
-**Purpose**: Containerization and infrastructure.
-
-**Components**:
-- `docker/`: Dockerfiles for backend, frontend
-- `scripts/`: Deployment automation scripts
-- `github-actions/`: CI/CD pipelines
-- `monitoring/`: Prometheus metrics, health checks
-
-### 7. Shared Utilities (legal-rag/shared/)
-
-**Purpose**: Common code used across teams.
-
-**Components**:
-- `configs/`: Shared configuration models
-- `constants/`: Application constants
-- `utils/`: Helper functions
-- `models/`: Shared data models
 
 ## Data Flow
 
 ### Document Ingestion Flow
 
 ```
-1. User uploads PDF via Frontend
+1. User uploads PDF via Frontend (/upload-documents)
    ↓
-2. Backend receives file, stores temporarily
+2. Backend receives file via POST /api/v1/documents/upload
    ↓
-3. Ingestion Pipeline processes:
-   - PDF extraction
-   - Text normalization
-   - Document chunking (1000 tokens, 200 overlap)
-   - Metadata extraction
+3. Extraction Pipeline processes:
+   - PDF extraction (PyMuPDF)
+   - Text cleaning and normalization
+   - Metadata loading
    ↓
-4. Embeddings generated for each chunk
+4. Chunking Pipeline:
+   - LangChain text splitting (configurable chunk size/overlap)
    ↓
-5. Chunks + embeddings stored in Vector DB
+5. Embeddings generated using Sentence-Transformers (all-MiniLM-L6-v2)
    ↓
-6. Metadata stored in PostgreSQL
+6. Vectors + metadata uploaded to Pinecone
    ↓
-7. Frontend shows success, updates document list
+7. Document metadata stored in PostgreSQL
+   ↓
+8. Frontend shows success, updates document list
 ```
 
 ### Query/Response Flow
 
 ```
-1. User asks question in chat
+1. User asks question in chat (/chat)
    ↓
-2. Query encoded to embedding
+2. Backend receives message via POST /api/v1/chat
    ↓
-3. Semantic search in Vector DB (top-k=5)
+3. Query embedded using Sentence-Transformers
    ↓
-4. Retrieved chunks reranked for relevance
+4. Semantic search in Pinecone (top-k configurable, default 5)
    ↓
-5. Top chunks + system prompt sent to LLM
+5. Retrieved chunks reranked for relevance (cross-encoder)
    ↓
-6. LLM generates response with citations
+6. Top chunks + system prompt + chat history sent to Google Gemini
    ↓
-7. Citations resolved to source documents
+7. Gemini generates response with citations
    ↓
-8. Response + citations sent to Frontend
+8. Citations parsed and formatted
    ↓
-9. Frontend displays message + source links
+9. Response + citations returned to Frontend
+   ↓
+10. Frontend displays message with source references
 ```
 
 ## Database Schema
 
-### PostgreSQL (Metadata)
+### PostgreSQL (Metadata & Auth)
 
 ```sql
+-- Users (Authentication)
+users (id, email, hashed_password, created_at)
+
 -- Documents
-documents (id, filename, upload_date, file_size, document_type)
+documents (id, title, filename, file_type, file_path,
+           court, case_number, judgment_date, source, language,
+           created_at, updated_at)
 
 -- Chunks
-chunks (id, document_id, chunk_index, text, page_number, created_at)
+chunks (id, document_id, content, page_number, section, paragraph,
+        chunk_index, created_at)
 
--- Metadata
-metadata (chunk_id, key, value)
+-- Processing Jobs
+processing_jobs (id, document_id, stage, status, error_message,
+                 started_at, completed_at)
 
--- Chat History
-conversations (id, user_id, created_at, updated_at)
-messages (id, conversation_id, role, content, created_at)
+-- Chat Sessions & Messages
+chat_sessions (id, title, created_at, updated_at)
+chat_messages (id, session_id, role, content, created_at)
+
+-- Citations
+citations (id, message_id, chunk_id, score)
 ```
 
-### Vector DB (Pinecone/Milvus)
+### Pinecone (Vector Storage)
 
 ```json
 {
   "id": "chunk_12345",
-  "values": [0.123, 0.456, ...],  // embedding vector
+  "values": [0.123, 0.456, ...],
   "metadata": {
     "document_id": "doc_123",
     "document_name": "Contract_A.pdf",
@@ -201,37 +234,42 @@ messages (id, conversation_id, role, content, created_at)
 
 ## Technology Stack
 
-| Layer      | Technology                              |
-| ---------- | --------------------------------------- |
-| Frontend   | React/Next.js, TypeScript, Tailwind CSS |
-| Backend    | Python, FastAPI, Pydantic               |
-| Database   | PostgreSQL (metadata), Redis (cache)    |
-| Vector DB  | Pinecone / Milvus                       |
-| Embeddings | OpenAI text-embedding-3-small           |
-| LLM        | GPT-4, Claude 3, LLaMA                  |
-| Containers | Docker, Docker Compose                  |
-| CI/CD      | GitHub Actions                          |
+| Layer       | Technology                                              |
+| ----------- | ------------------------------------------------------- |
+| Frontend    | React 19, Vite 8, Tailwind CSS v4, React Router v7     |
+| Backend     | Python 3.13, FastAPI, Pydantic v2, SQLAlchemy 2 (async)|
+| Database    | PostgreSQL (Render managed)                             |
+| Vector DB   | Pinecone                                                |
+| Embeddings  | Sentence-Transformers `all-MiniLM-L6-v2` (384-dim)     |
+| LLM         | Google Gemini (via `google-genai` SDK)                  |
+| Auth        | JWT (python-jose), bcrypt (passlib)                     |
+| Hosting     | Frontend: Vercel, Backend: Render                       |
+| Containers  | Docker, Docker Compose                                  |
 
-## Security Considerations
+## Security
 
-1. **API Authentication**: JWT tokens for API access
-2. **Data Encryption**: TLS for transit, encryption at rest
-3. **Access Control**: Role-based access (admin, user, viewer)
-4. **Rate Limiting**: API rate limits per user/key
-5. **Audit Logging**: All operations logged and timestamped
-6. **PII Masking**: Sensitive data redaction options
+1. **API Authentication**: JWT tokens via `/api/v1/auth` endpoints
+2. **Password Hashing**: bcrypt via passlib
+3. **CORS**: Explicit origin allowlist (localhost + Vercel deployments)
+4. **Input Validation**: Pydantic schema validation on all endpoints
+5. **Error Handling**: Custom exception handlers (no stack traces leaked to client)
+6. **Frontend Security Headers**: X-Frame-Options, X-XSS-Protection, X-Content-Type-Options (via Nginx for Docker deployments)
 
-## Scalability & Performance
+## Deployment Architecture
 
-- **Horizontal Scaling**: Stateless backend services in Kubernetes
-- **Caching**: Redis for query results and session data
-- **Batch Processing**: Async ingestion for large documents
-- **Vector DB Optimization**: Dimensionality reduction, indexing strategies
-- **CDN**: Static assets served via CDN
-
-## Monitoring & Observability
-
-- **Metrics**: Prometheus for system metrics
-- **Logging**: JSON structured logs to ELK or CloudWatch
-- **Tracing**: OpenTelemetry for request tracing
-- **Alerts**: PagerDuty integration for critical issues
+```
+┌─────────────┐        ┌───────────────┐        ┌──────────────┐
+│   GitHub    │───push──▶   Vercel     │        │   Render     │
+│   main      │         │   (Frontend) │        │   (Backend)  │
+│   branch    │───push──▶──────────────│        │──────────────│
+└─────────────┘         │  React SPA   │──API──▶│  FastAPI     │
+                        │  vercel.json │        │  Dockerfile  │
+                        └───────────────┘        └──────┬───────┘
+                                                        │
+                                        ┌───────────────┼───────────────┐
+                                        │               │               │
+                                   ┌────▼────┐   ┌──────▼──────┐  ┌────▼────┐
+                                   │PostgreSQL│   │  Pinecone   │  │ Gemini  │
+                                   │ (Render) │   │  (Cloud)    │  │  API    │
+                                   └──────────┘   └─────────────┘  └─────────┘
+```
