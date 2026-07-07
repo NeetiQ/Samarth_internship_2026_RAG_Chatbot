@@ -72,7 +72,6 @@ async def run_async_migrations() -> None:
 
     builtins.print(f"alembic env.py: connectable.url = {mask_url(str(connectable.url))}", flush=True)
     builtins.print(f"alembic env.py: connectable.url.query = {connectable.url.query}", flush=True)
-    builtins.print(f"alembic env.py: connectable.dialect.connect_args = {connectable.dialect.connect_args}", flush=True)
 
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
