@@ -50,12 +50,30 @@ def do_run_migrations(connection: Connection) -> None:
         context.run_migrations()
 
 async def run_async_migrations() -> None:
+    import builtins
+    def mask_url(url_str: str) -> str:
+        if not url_str: return ""
+        try:
+            import urllib.parse
+            parsed = urllib.parse.urlparse(url_str)
+            if parsed.password:
+                return url_str.replace(parsed.password, "******")
+        except: pass
+        return url_str
+
+    builtins.print(f"alembic env.py: settings.DATABASE_URL = {mask_url(settings.DATABASE_URL)}", flush=True)
+
     connectable = async_engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
         url=settings.DATABASE_URL
     )
+
+    builtins.print(f"alembic env.py: connectable.url = {mask_url(str(connectable.url))}", flush=True)
+    builtins.print(f"alembic env.py: connectable.url.query = {connectable.url.query}", flush=True)
+    builtins.print(f"alembic env.py: connectable.dialect.connect_args = {connectable.dialect.connect_args}", flush=True)
+
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
     await connectable.dispose()

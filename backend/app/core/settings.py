@@ -25,6 +25,19 @@ class Settings(BaseSettings):
         if not v:
             raise ValueError("DATABASE_URL environment variable is missing. A valid database connection string is required.")
         
+        import builtins
+        def mask_url(url_str: str) -> str:
+            if not url_str: return ""
+            try:
+                import urllib.parse
+                parsed = urllib.parse.urlparse(url_str)
+                if parsed.password:
+                    return url_str.replace(parsed.password, "******")
+            except: pass
+            return url_str
+
+        builtins.print(f"validate_database_url: Input URL = {mask_url(v)}", flush=True)
+
         env = info.data.get("ENVIRONMENT", "production")
         if env == "production":
             if "localhost" in v or "127.0.0.1" in v:
@@ -48,6 +61,7 @@ class Settings(BaseSettings):
             v = v.replace("?channel_binding=require&", "?")
             v = v.replace("?channel_binding=require", "")
             
+        builtins.print(f"validate_database_url: Output URL = {mask_url(v)}", flush=True)
         return v
     
     # Storage
