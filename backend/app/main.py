@@ -16,6 +16,7 @@ from app.core.exceptions import (
 
 import logging
 import os
+import sys
 from urllib.parse import urlparse
 from dotenv import load_dotenv
 
