@@ -46,6 +46,9 @@ class Settings:
         os.getenv("EMBEDDING_DIMENSION", 384)
     )
 
+    EMBEDDING_SERVICE_URL = os.getenv("EMBEDDING_SERVICE_URL", "http://localhost:7860")
+    EMBEDDING_SERVICE_API_KEY = os.getenv("EMBEDDING_SERVICE_API_KEY", "")
+
     # ==========================================
     # Retrieval Configuration
     # ==========================================

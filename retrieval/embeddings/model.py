@@ -1,50 +1,19 @@
 """
-Embedding model loader.
+Embedding model loader (Stubbed).
 
-Loads the SentenceTransformer model only once
-and reuses it throughout the application.
+Model loading has been moved to the external Hugging Face Embedding Service.
+Local embedding loading is disabled to prevent memory bottlenecks.
 """
 
-from typing import Optional
-
-from retrieval.config.settings import Settings
-
-
 class EmbeddingModel:
-    """Singleton loader for the embedding model."""
-
-    _model: Optional[object] = None
+    """Stub for the singleton embedding model loader."""
 
     @classmethod
     def get_model(cls) -> object:
         """
-        Returns the shared embedding model instance.
+        Raises RuntimeError because local model loading is deprecated.
         """
-        if cls._model is None:
-            import sys
-            import os
-            sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
-            from backend.app.core.diagnostic_logger import Profiler
-
-            with Profiler("Loading SentenceTransformer"):
-                from sentence_transformers import SentenceTransformer
-                
-                print("=" * 60)
-                print(f"Loading Embedding Model : {Settings.EMBEDDING_MODEL}")
-                print(f"Embedding Dimension     : {Settings.EMBEDDING_DIMENSION}")
-                print("=" * 60)
-
-                try:
-                    cls._model = SentenceTransformer(
-                        Settings.EMBEDDING_MODEL
-                    )
-                    print("Embedding model loaded successfully.\n")
-
-                except Exception as error:
-                    import logging
-                    logging.getLogger("legal-rag-diagnostics").exception(f"Failed to load embedding model: {error}")
-                    raise RuntimeError(
-                        f"Failed to load embedding model: {error}"
-                    ) from error
-
-        return cls._model
+        raise RuntimeError(
+            "Local embedding model loading is disabled. "
+            "Please use retrieval.embeddings.client.EmbeddingClient instead."
+        )

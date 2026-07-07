@@ -1,28 +1,16 @@
-"""
-Embedding generation module.
-
-This module generates embeddings for document chunks
-and user queries using the shared embedding model.
-"""
-
 from typing import List
 
-from retrieval.embeddings.model import EmbeddingModel
+from retrieval.embeddings.client import EmbeddingClient
 
 
 class Embedder:
     """
-    Handles embedding generation using the shared embedding model.
+    Handles embedding generation using the external embedding service.
     """
 
     def __init__(self):
-        """Initialize the embedder."""
-        pass
-
-    @property
-    def _model(self):
-        """Lazy load the embedding model."""
-        return EmbeddingModel.get_model()
+        """Initialize the embedder with the shared HTTP client."""
+        self.client = EmbeddingClient()
 
     def encode(self, text: str) -> List[float]:
         """
@@ -37,12 +25,7 @@ class Embedder:
         if not text or not text.strip():
             raise ValueError("Input text cannot be empty.")
 
-        embedding = self._model.encode(
-            text,
-            normalize_embeddings=True
-        )
-
-        return embedding.tolist()
+        return self.client.encode(text)
 
     def encode_batch(self, texts: List[str]) -> List[List[float]]:
         """
@@ -57,9 +40,4 @@ class Embedder:
         if not texts:
             raise ValueError("Input text list cannot be empty.")
 
-        embeddings = self._model.encode(
-            texts,
-            normalize_embeddings=True
-        )
-
-        return embeddings.tolist()
+        return self.client.encode_batch(texts)

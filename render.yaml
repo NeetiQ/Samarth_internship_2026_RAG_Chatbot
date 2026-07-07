@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: legal-rag-backend
+    env: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: DATABASE_URL
+        sync: false # User must set their database connection string in Render Dashboard
+      - key: GEMINI_API_KEY
+        sync: false # User must set their Gemini API key in Render Dashboard
+      - key: SECRET_KEY
+        value: aTBFTehQyAGm4p53
+      - key: PINECONE_API_KEY
+        sync: false # User must set their Pinecone API key in Render Dashboard
+      - key: PINECONE_INDEX
+        value: legal-rag
+      - key: PINECONE_NAMESPACE
+        value: default
+      - key: EMBEDDING_SERVICE_URL
+        value: https://yashmit-legal-rag.hf.space
+      - key: EMBEDDING_SERVICE_API_KEY
+        value: aTBFTehQyAGm4p53

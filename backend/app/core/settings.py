@@ -65,6 +65,8 @@ class Settings(BaseSettings):
     RETRIEVAL_TOP_K: int = 5
     RERANKER_MODEL_NAME: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
     RERANKER_TOP_K: int = 3
+    EMBEDDING_SERVICE_URL: str = "http://localhost:7860"
+    EMBEDDING_SERVICE_API_KEY: str = ""
     
     # Pinecone Vector DB
     PINECONE_API_KEY: str

@@ -25,6 +25,8 @@ load_dotenv(
     override=True,
 )
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
 from app.api.v1 import api_router
 from app.database.session import engine
 
@@ -131,23 +133,49 @@ def create_app() -> FastAPI:
 
     @app.get("/ready", tags=["System"])
     async def readiness_check():
+        from app.services.vector.pinecone_service import PineconeService
+        from retrieval.embeddings.client import EmbeddingClient
+
+        errors = {}
+
+        # 1. PostgreSQL check
         try:
             async with engine.connect() as conn:
                 await conn.execute(text("SELECT 1"))
+        except Exception as e:
+            errors["database"] = f"Database check failed: {str(e)}"
 
-            return {
-                "status": "ready",
-                "project": settings.PROJECT_NAME,
-            }
+        # 2. Pinecone check
+        try:
+            if not PineconeService.check_health():
+                errors["pinecone"] = "Pinecone index status check failed."
+        except Exception as e:
+            errors["pinecone"] = f"Pinecone connection failed: {str(e)}"
 
-        except HTTPException:
-            raise
+        # 3. Embedding Service check
+        try:
+            client = EmbeddingClient()
+            health_status = client.get_health()
+            if health_status.get("status") != "healthy":
+                errors["embedding_service"] = f"Embedding Service status: {health_status.get('status')}"
+        except Exception as e:
+            errors["embedding_service"] = f"Embedding Service connection failed: {str(e)}"
 
-        except Exception:
+        if errors:
             raise HTTPException(
                 status_code=503,
-                detail="Database not ready",
+                detail={"message": "System not ready", "components": errors}
             )
+
+        return {
+            "status": "ready",
+            "project": settings.PROJECT_NAME,
+            "components": {
+                "database": "healthy",
+                "pinecone": "healthy",
+                "embedding_service": "healthy"
+            }
+        }
 
     return app
 
