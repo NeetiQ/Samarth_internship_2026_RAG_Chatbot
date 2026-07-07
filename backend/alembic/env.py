@@ -61,7 +61,18 @@ async def run_async_migrations() -> None:
         except: pass
         return url_str
 
-    builtins.print(f"alembic env.py: settings.DATABASE_URL = {mask_url(settings.DATABASE_URL)}", flush=True)
+    url_str = settings.DATABASE_URL
+    query_str = ""
+    try:
+        import urllib.parse
+        query_str = urllib.parse.urlparse(url_str).query
+    except:
+        pass
+
+    builtins.print("--- env.py async_engine_from_config config ---", flush=True)
+    builtins.print(f"DATABASE_URL (masked): {mask_url(url_str)}", flush=True)
+    builtins.print(f"DATABASE_URL query: {query_str}", flush=True)
+    builtins.print("-----------------------------------------------", flush=True)
 
     connectable = async_engine_from_config(
         config.get_section(config.config_ini_section, {}),
@@ -70,8 +81,10 @@ async def run_async_migrations() -> None:
         url=settings.DATABASE_URL
     )
 
-    builtins.print(f"alembic env.py: connectable.url = {mask_url(str(connectable.url))}", flush=True)
-    builtins.print(f"alembic env.py: connectable.url.query = {connectable.url.query}", flush=True)
+    builtins.print("--- env.py before connectable.connect() ---", flush=True)
+    builtins.print(f"connectable.url (masked): {mask_url(str(connectable.url))}", flush=True)
+    builtins.print(f"connectable.url.query: {connectable.url.query if hasattr(connectable, 'url') else 'N/A'}", flush=True)
+    builtins.print("-------------------------------------------", flush=True)
 
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
