@@ -24,16 +24,25 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
+import traceback
+
 def run_migrations_offline() -> None:
-    url = settings.DATABASE_URL
-    context.configure(
-        url=url,
-        target_metadata=target_metadata,
-        literal_binds=True,
-        dialect_opts={"paramstyle": "named"},
-    )
-    with context.begin_transaction():
-        context.run_migrations()
+    print("START Database Migration (Offline)", flush=True)
+    try:
+        url = settings.DATABASE_URL
+        context.configure(
+            url=url,
+            target_metadata=target_metadata,
+            literal_binds=True,
+            dialect_opts={"paramstyle": "named"},
+        )
+        with context.begin_transaction():
+            context.run_migrations()
+        print("END Database Migration (Offline)", flush=True)
+    except Exception as e:
+        print(f"DATABASE MIGRATION ERROR (Offline): {e}", flush=True)
+        traceback.print_exc()
+        raise
 
 def do_run_migrations(connection: Connection) -> None:
     context.configure(connection=connection, target_metadata=target_metadata)
@@ -52,7 +61,14 @@ async def run_async_migrations() -> None:
     await connectable.dispose()
 
 def run_migrations_online() -> None:
-    asyncio.run(run_async_migrations())
+    print("START Database Migration (Online)", flush=True)
+    try:
+        asyncio.run(run_async_migrations())
+        print("END Database Migration (Online)", flush=True)
+    except Exception as e:
+        print(f"DATABASE MIGRATION ERROR (Online): {e}", flush=True)
+        traceback.print_exc()
+        raise
 
 if context.is_offline_mode():
     run_migrations_offline()
