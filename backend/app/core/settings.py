@@ -39,7 +39,9 @@ class Settings(BaseSettings):
         elif v.startswith("postgresql://"):
             v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
             
-        if "sslmode=" in v:
+        if "sslmode=require" in v:
+            v = v.replace("sslmode=require", "ssl=true")
+        elif "sslmode=" in v:
             v = v.replace("sslmode=", "ssl=")
         if "channel_binding=" in v:
             v = v.replace("&channel_binding=require", "")
