@@ -28,6 +28,7 @@ except:
 connect_args = {
     "prepared_statement_cache_size": 0,
     "statement_cache_size": 0,
+    "ssl": True,
 }
 
 builtins.print("--- session.py create_async_engine config ---", flush=True)
