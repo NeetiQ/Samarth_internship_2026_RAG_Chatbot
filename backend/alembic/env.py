@@ -70,7 +70,9 @@ async def run_async_migrations() -> None:
         pass
 
     builtins.print("--- env.py async_engine_from_config config ---", flush=True)
-    builtins.print(f"DATABASE_URL (masked): {mask_url(url_str)}", flush=True)
+    builtins.print(f"alembic env.py: settings.DATABASE_URL = {mask_url(settings.DATABASE_URL)}", flush=True)
+    builtins.print(f"alembic env.py: PGSSLMODE in os.environ = {os.environ.get('PGSSLMODE')}", flush=True)
+    builtins.print(f"alembic env.py: PGSSLROOTCERT in os.environ = {os.environ.get('PGSSLROOTCERT')}", flush=True)
     builtins.print(f"DATABASE_URL query: {query_str}", flush=True)
     builtins.print("-----------------------------------------------", flush=True)
 
