@@ -25,6 +25,7 @@ class EmbeddingModel:
         import builtins
         builtins.print("EmbeddingModel.get_model: Called", flush=True)
 
+
         if cls._model is None:
             builtins.print("EmbeddingModel.get_model: Model is None, initializing...", flush=True)
             print("=" * 60)
