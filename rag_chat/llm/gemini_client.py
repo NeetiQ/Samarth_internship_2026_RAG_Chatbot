@@ -7,7 +7,7 @@ from rag_chat.llm.model_config import (
     TEMPERATURE,
     MAX_OUTPUT_TOKENS,
     TOP_P,
-    TOP_K,
+    LLM_TOP_K,
 )
 
 
@@ -70,7 +70,7 @@ def generate_response(prompt):
                     "temperature": TEMPERATURE,
                     "max_output_tokens": MAX_OUTPUT_TOKENS,
                     "top_p": TOP_P,
-                    "top_k": TOP_K,
+                    "top_k": LLM_TOP_K,
                 },
             )
 
