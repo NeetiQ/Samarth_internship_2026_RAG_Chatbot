@@ -7,8 +7,6 @@ retrieved chunks based on query relevance.
 
 from typing import List, Dict
 
-from sentence_transformers import CrossEncoder
-
 from retrieval.config.settings import Settings
 
 
@@ -26,6 +24,7 @@ class Reranker:
             print(f"Loading Reranker Model : {Settings.RERANKER_MODEL}")
             print("=" * 60)
 
+            from sentence_transformers import CrossEncoder
             cls._model = CrossEncoder(Settings.RERANKER_MODEL)
 
             print("Reranker loaded successfully.\n")
