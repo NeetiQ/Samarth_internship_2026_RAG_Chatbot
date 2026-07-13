@@ -1,6 +1,34 @@
 # Backend Endpoints
 
-All v1 endpoints are prefixed with `/api/v1`. Auth-protected endpoints require `Authorization: Bearer <token>`.
+## Overview
+
+The backend exposes a RESTful API organized into modular endpoint groups. Each group corresponds to a distinct domain of the application. All v1 endpoints are prefixed with `/api/v1` and follow consistent patterns for authentication, validation, and response formatting.
+
+## Authentication Flow
+
+```mermaid
+graph LR
+    A[Signup] --> B[Login]
+    B --> C[Receive JWT]
+    C --> D[Include in Authorization Header]
+    D --> E[Access Protected APIs]
+```
+
+1. The user registers via `/auth/signup` or authenticates via `/auth/login`.
+2. The server returns a signed JWT token.
+3. The client includes the token as `Authorization: Bearer <token>` in all subsequent requests.
+4. Protected endpoints validate the token and enforce resource ownership.
+
+## Endpoint Categories
+
+| Category       | Purpose                                                          |
+|----------------|------------------------------------------------------------------|
+| **Authentication** | User registration, login, token issuance, and profile retrieval |
+| **Documents**  | Upload, list, and inspect legal documents and their processing status |
+| **Extraction** | Re-trigger document processing and retrieve extracted text chunks |
+| **Retrieval**  | Semantic search and reranking over the Pinecone vector index     |
+| **Chat**       | RAG-powered Q&A with session management, history, and citations  |
+| **System**     | Liveness and readiness health checks for deployment monitoring   |
 
 ---
 
@@ -141,3 +169,12 @@ All v1 endpoints are prefixed with `/api/v1`. Auth-protected endpoints require `
 |--------|------------|-------------------------------------------------------|------|
 | `GET`  | `/health`  | Liveness check                                        | No   |
 | `GET`  | `/ready`   | Deep readiness (DB + Pinecone + Embedding Service)    | No   |
+
+---
+
+## Notes
+
+- **Request Validation:** All request bodies are validated using Pydantic schemas. Invalid payloads return `422` with field-level error details.
+- **Response Validation:** All responses use typed Pydantic response models with `from_attributes=True` for ORM compatibility.
+- **Ownership Verification:** Document, extraction, chat, and retrieval endpoints verify that the authenticated user owns or has access to the requested resource. Unauthorized access returns `403`.
+- **Consistent HTTP Responses:** All endpoints return structured JSON. Success responses use `200`/`201`, errors use standard HTTP status codes with `{ "error": "...", "message": "..." }` format.

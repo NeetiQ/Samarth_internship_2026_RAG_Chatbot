@@ -2,26 +2,45 @@
 
 ## Overview
 
-The Legal RAG API provides endpoints for user authentication, document management, text extraction, semantic retrieval, and RAG-powered chat over Indian legal documents.
+The Legal RAG API is a RESTful backend that provides programmatic access to the Legal RAG system. It enables user authentication, document management, text extraction, semantic retrieval, and RAG-powered chat over Indian legal documents.
+
+The API follows REST architectural principles with JSON as the communication format. All endpoints are versioned under `/api/v1` to support future backward-compatible changes without breaking existing clients.
 
 - **Base URL:** `https://<backend-host>/api/v1`
 - **Protocol:** HTTPS (production), HTTP (development)
 - **Format:** JSON request/response bodies
+- **API Version:** `v1`
 
 ## Authentication
 
 All endpoints except `/health`, `/ready`, and `/api/v1/auth/*` require a JWT Bearer token.
+
+**How JWT authentication works:**
+
+1. The client authenticates via `POST /api/v1/auth/login` or `POST /api/v1/auth/signup`.
+2. The server returns a signed JWT access token (HS256, 60-minute expiry).
+3. The client includes the token in all subsequent requests via the `Authorization` header.
+4. The server validates the token, extracts the user identity, and enforces ownership on resources.
+
+**Public endpoints** (no token required): `/health`, `/ready`, `/api/v1/auth/signup`, `/api/v1/auth/login`, `/api/v1/auth/token`.
+
+**Protected endpoints** (token required): All document, extraction, retrieval, and chat endpoints.
 
 | Header          | Value              |
 |-----------------|--------------------|
 | `Authorization` | `Bearer <token>`   |
 | `Content-Type`  | `application/json` |
 
-Obtain a token via `POST /api/v1/auth/login` or `POST /api/v1/auth/signup`.
+## Request/Response Conventions
 
-## Error Response Format
+- **Format:** All request and response bodies use JSON (`application/json`), except file uploads which use `multipart/form-data`.
+- **Authorization:** Protected endpoints require `Authorization: Bearer <token>` header.
+- **Pagination:** List endpoints support `skip` and `limit` query parameters (e.g., `GET /documents?skip=0&limit=100`).
+- **File Uploads:** Document upload uses `multipart/form-data` with a `file` field. Max upload size is 50 MB.
 
-All errors follow a consistent structure:
+## Error Handling
+
+All errors follow a consistent JSON structure:
 
 ```json
 {
@@ -30,7 +49,7 @@ All errors follow a consistent structure:
 }
 ```
 
-Validation errors (422) include field-level details:
+**Validation errors** (422) include field-level details from Pydantic:
 
 ```json
 {
@@ -40,6 +59,17 @@ Validation errors (422) include field-level details:
   ]
 }
 ```
+
+**Authentication errors** (401) are returned when the JWT is missing, expired, or invalid:
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "Could not validate credentials"
+}
+```
+
+**Database errors** (500) are logged server-side and return a generic message to avoid leaking internals.
 
 ## Standard HTTP Status Codes
 
@@ -55,6 +85,25 @@ Validation errors (422) include field-level details:
 | 422  | Validation Error       |
 | 500  | Internal Server Error  |
 | 503  | Service Unavailable    |
+
+## Endpoint Organization
+
+Endpoints are grouped by domain responsibility:
+
+| Group          | Purpose                                                        |
+|----------------|----------------------------------------------------------------|
+| **Auth**       | User registration, login, token management, profile retrieval  |
+| **Documents**  | Upload, list, and inspect legal documents and processing status|
+| **Extraction** | Re-trigger processing pipelines and retrieve extracted chunks  |
+| **Retrieval**  | Semantic search and reranking over the legal corpus            |
+| **Chat**       | RAG-powered Q&A with session management and citations          |
+| **Health**     | Liveness and readiness probes for monitoring and deployment    |
+
+## Best Practices
+
+- The API is **stateless** — each request carries all information needed for processing (JWT token, request body). No server-side sessions are stored.
+- **GET requests are idempotent** — they can be safely retried without side effects.
+- Standard **HTTP status codes** indicate success or failure. Clients should handle 4xx and 5xx responses gracefully.
 
 ---
 
