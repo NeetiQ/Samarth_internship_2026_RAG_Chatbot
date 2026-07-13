@@ -1,241 +1,148 @@
-# Deployment Guide
+# Deployment
 
-## Live Deployments
+## Deployment Architecture
 
-| Service   | Platform | URL                                                                    |
-| --------- | -------- | ---------------------------------------------------------------------- |
-| Frontend  | Vercel   | https://samarth-internship-2026-rag-chatbot.vercel.app                |
-| Backend   | Render   | https://legal-rag-backend-zf50.onrender.com                           |
-| Database  | Render   | PostgreSQL (managed, connection string in `DATABASE_URL`)             |
-| Vector DB | Pinecone | Cloud-hosted index (API key in `PINECONE_API_KEY`)                    |
+```mermaid
+graph TB
+    subgraph Vercel
+        FE[Frontend<br/>Vite + React]
+    end
+
+    subgraph Render
+        BE[Backend<br/>FastAPI + Docker]
+    end
+
+    subgraph Neon
+        PG[(PostgreSQL)]
+    end
+
+    subgraph HuggingFace["HuggingFace Spaces"]
+        EMB[Embedding Service<br/>Docker + MiniLM-L6]
+    end
+
+    subgraph Pinecone["Pinecone (AWS us-east-1)"]
+        VDB[(Vector Index<br/>384-dim, cosine)]
+    end
+
+    subgraph Google
+        GEM[Gemini API]
+    end
+
+    FE -->|HTTPS| BE
+    BE -->|asyncpg + SSL| PG
+    BE -->|gRPC/REST| VDB
+    BE -->|HTTPS + API Key| EMB
+    BE -->|HTTPS + API Key| GEM
+```
+
+## Services
+
+| Service                    | Platform              | URL / Host                                    |
+|----------------------------|-----------------------|-----------------------------------------------|
+| **Frontend**               | Vercel                | `samarth-internship-2026-rag-chatbot.vercel.app` |
+| **Backend**                | Render (Docker)       | Configured via `render.yaml`                  |
+| **PostgreSQL**             | Neon                  | `ep-shiny-fog-*.neon.tech`                    |
+| **Vector DB**              | Pinecone (Serverless) | Index: `legal-rag`, Region: `us-east-1`       |
+| **Embedding Service**      | HuggingFace Spaces    | `https://yashmit-legal-rag.hf.space`          |
+| **LLM**                   | Google Gemini API     | Model: `gemini-2.5-flash`                     |
+
+## Deployment Flow
+
+Deploy services in this order to satisfy dependencies:
+
+```
+1. HuggingFace Embedding Service  (no dependencies)
+2. PostgreSQL (Neon)               (provision database)
+3. Backend (Render)                (depends on 1 + 2 + Pinecone + Gemini)
+4. Frontend (Vercel)               (depends on 3)
+```
+
+### 1. HuggingFace Embedding Service
+
+- Push `legal-rag-embedding-service/` to HuggingFace Space (Docker SDK).
+- The Dockerfile pre-downloads the `all-MiniLM-L6-v2` model at build time.
+- Set `EMBEDDING_SERVICE_API_KEY` as a Space secret.
+- Runs on port `7860`.
+
+### 2. PostgreSQL (Neon)
+
+- Database is provisioned on Neon with a pooled connection endpoint.
+- SSL is required (`ssl=true` in the connection string).
+- Schema is applied automatically via Alembic migrations at backend startup.
+
+### 3. Backend (Render)
+
+- Defined in `render.yaml` (Infrastructure as Code).
+- Docker build context is the repo root; Dockerfile is at `backend/Dockerfile`.
+- The `entrypoint.sh` script runs: wait for DB → Alembic migrations → corpus seed → start Uvicorn.
+- Set secrets (`DATABASE_URL`, `GEMINI_API_KEY`, `PINECONE_API_KEY`) in the Render Dashboard.
+
+### 4. Frontend (Vercel)
+
+- Deployed from `frontend/` directory.
+- Set `VITE_API_URL` to the Render backend URL.
+- `vercel.json` configures SPA routing rewrites.
 
 ---
 
-## Frontend Deployment (Vercel)
+## Required Environment Variables
 
-### Initial Setup
+### Backend (Render)
 
-1. Go to [Vercel Dashboard](https://vercel.com/dashboard) → **Add New Project**
-2. Import the `Samarth_internship_2026_RAG_Chatbot` repository
-3. Configure:
-   - **Root Directory**: `frontend`
-   - **Framework Preset**: Vite
-   - **Build Command**: `npm run build` (auto-detected)
-   - **Output Directory**: `dist` (auto-detected)
-4. Add Environment Variable:
-   - `VITE_API_URL` = `https://legal-rag-backend-zf50.onrender.com`
-5. Click **Deploy**
+| Variable                       | Required | Description                          |
+|--------------------------------|----------|--------------------------------------|
+| `ENVIRONMENT`                  | Yes      | `production` or `development`        |
+| `DEBUG`                        | No       | `true`/`false` (default: `true`)     |
+| `DATABASE_URL`                 | Yes      | PostgreSQL connection string         |
+| `SECRET_KEY`                   | Yes      | JWT signing key                      |
+| `ALGORITHM`                    | No       | JWT algorithm (default: `HS256`)     |
+| `ACCESS_TOKEN_EXPIRE_MINUTES`  | No       | Token TTL (default: `60`)            |
+| `PINECONE_API_KEY`             | Yes      | Pinecone API key                     |
+| `PINECONE_INDEX`               | Yes      | Pinecone index name                  |
+| `PINECONE_NAMESPACE`           | No       | Namespace (default: `default`)       |
+| `GEMINI_API_KEY`               | Yes      | Google Gemini API key                |
+| `GEMINI_MODEL`                 | No       | Model name (default: `gemini-2.5-flash`) |
+| `EMBEDDING_SERVICE_URL`        | No       | HF Space URL (default: `http://localhost:7860`) |
+| `EMBEDDING_SERVICE_API_KEY`    | No       | API key for embedding service        |
+| `SEED_CORPUS`                  | No       | Auto-seed corpus on startup (default: `true`) |
+| `STORAGE_DIR`                  | No       | Upload directory (default: `./data/uploads`) |
+| `CHUNK_SIZE`                   | No       | Chunking token size (default: `500`) |
+| `CHUNK_OVERLAP`                | No       | Chunk overlap (default: `50`)        |
 
-### SPA Routing
+### Embedding Service (HuggingFace)
 
-The frontend uses React Router with `BrowserRouter`. A `vercel.json` file in the `frontend/` directory handles client-side routing rewrites:
+| Variable                     | Required | Description                    |
+|------------------------------|----------|--------------------------------|
+| `EMBEDDING_SERVICE_API_KEY`  | Yes      | API key for bearer auth        |
+| `MODEL_NAME`                 | No       | Model (default: `all-MiniLM-L6-v2`) |
+| `PORT`                       | No       | Server port (default: `7860`)  |
+
+### Frontend (Vercel)
+
+| Variable          | Required | Description                    |
+|-------------------|----------|--------------------------------|
+| `VITE_API_URL`    | Yes      | Backend base URL               |
+
+---
+
+## Health Checks
+
+### `GET /health`
+
+Liveness probe. Returns `200` immediately if the process is running.
 
 ```json
-{
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ]
-}
+{ "status": "ok", "project": "Legal RAG API" }
 ```
 
-This ensures all routes (`/chat`, `/dashboard`, `/settings`, etc.) serve `index.html` instead of returning 404.
+### `GET /ready`
 
-### Auto-Deployment
+Readiness probe. Verifies connectivity to all three dependencies:
 
-Vercel auto-deploys on every push to the `main` branch. Preview deployments are created for pull requests.
+| Component           | Check                                        |
+|---------------------|----------------------------------------------|
+| PostgreSQL          | `SELECT 1` via asyncpg                       |
+| Pinecone            | Index health status check                    |
+| Embedding Service   | `GET /health` returns `status: "healthy"`    |
 
----
-
-## Backend Deployment (Render)
-
-### Configuration
-
-The backend deploys as a Docker web service on Render. It uses the `backend/Dockerfile` for the build.
-
-### Environment Variables
-
-Set the following in Render's dashboard:
-
-| Variable                   | Description                                    |
-| -------------------------- | ---------------------------------------------- |
-| `DATABASE_URL`             | PostgreSQL connection string (Render managed)  |
-| `GEMINI_API_KEY`           | Google Gemini API key                          |
-| `SECRET_KEY`               | JWT signing secret                             |
-| `PINECONE_API_KEY`         | Pinecone API key                               |
-| `PINECONE_INDEX`           | Pinecone index name                            |
-| `PINECONE_NAMESPACE`       | Pinecone namespace (default: `default`)        |
-| `EMBEDDING_MODEL`          | Embedding model name (default: `all-MiniLM-L6-v2`) |
-| `EMBEDDING_DIMENSION`      | Embedding vector dimension (default: `384`)    |
-
-### CORS Configuration
-
-CORS origins are explicitly defined in `backend/app/main.py`:
-
-```python
-allow_origins=[
-    "http://localhost:5173",
-    "http://localhost:8000",
-    "http://localhost",
-    "https://samarth-internship-2026-rag-chatbot.vercel.app",
-    "https://samarth-internship-2026-rag-chatbot-dgxzw5len.vercel.app"
-]
-```
-
-> **Important**: When adding new Vercel deployment URLs (e.g., preview deployments), update this list and push to `main` to trigger a Render redeploy.
-
-### Health Checks
-
-- **Liveness**: `GET /health` — Returns `{"status": "ok"}`
-- **Readiness**: `GET /ready` — Checks PostgreSQL connectivity, returns `{"status": "ready"}` or HTTP 503
-
----
-
-## Local Development
-
-### 1. Setup Environment
-
-```bash
-# Clone the repository
-git clone https://github.com/NeetiQ/Samarth_internship_2026_RAG_Chatbot.git
-cd legal-rag
-
-# Copy environment template
-cp .env.example .env
-
-# Edit .env with your settings (DATABASE_URL, GEMINI_API_KEY, PINECONE_API_KEY, etc.)
-```
-
-### 2. Backend (Local)
-
-```bash
-cd backend
-
-# Create virtual environment
-python -m venv venv
-venv\Scripts\activate  # Windows
-# source venv/bin/activate  # macOS/Linux
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run database migrations
-python -m alembic upgrade head
-
-# Start the server
-uvicorn app.main:app --reload
-```
-
-The backend will be available at `http://localhost:8000`.
-Swagger UI: `http://localhost:8000/api/v1/docs`
-
-### 3. Frontend (Local)
-
-```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Start dev server
-npm run dev
-```
-
-The frontend will be available at `http://localhost:5173`.
-
-### 4. Docker Compose (Full Stack)
-
-```bash
-# Build and start all services
-docker-compose up --build
-
-# Or in detached mode
-docker-compose up -d --build
-
-# View logs
-docker-compose logs -f
-```
-
-Services:
-- **API**: `http://localhost:8000`
-- **Frontend**: `http://localhost:3000`
-
----
-
-## Database Migrations
-
-### Run Migrations
-
-```bash
-cd backend
-python -m alembic upgrade head
-```
-
-### Create New Migration
-
-```bash
-cd backend
-python -m alembic revision --autogenerate -m "description"
-```
-
----
-
-## Docker Configuration
-
-### Frontend Dockerfile
-
-Multi-stage build: Node 20 (build) → Nginx Alpine (serve).
-
-- Builds the Vite app with `VITE_API_URL` injected at build time
-- Serves static files via Nginx with production-ready configuration
-- Includes `.dockerignore` to exclude `node_modules`, `.env`, etc.
-
-### Nginx Configuration (`frontend/nginx.conf`)
-
-Production-ready with:
-- SPA routing (`try_files $uri $uri/ /index.html`)
-- Security headers (X-Frame-Options, X-XSS-Protection, X-Content-Type-Options)
-- Static asset caching (1 year for hashed assets)
-- Gzip compression
-
-### Docker Compose (`docker-compose.yml`)
-
-Orchestrates:
-- `api`: Backend FastAPI service with environment variables and health checks
-- `frontend`: Nginx-served React SPA
-
----
-
-## Troubleshooting
-
-### CORS Errors
-
-If the frontend gets CORS errors:
-1. Check that the frontend URL is listed in `backend/app/main.py` `allow_origins`
-2. Commit, push to `main`, and wait for Render to redeploy
-
-### Vercel 404 on Routes
-
-If direct navigation to `/chat`, `/dashboard`, etc. returns 404:
-1. Ensure `frontend/vercel.json` exists with the SPA rewrite rule
-2. Push to `main` and trigger a Vercel redeploy
-
-### Backend Not Starting
-
-```bash
-# Check logs on Render dashboard
-# Common issues:
-# 1. Missing environment variables (DATABASE_URL, SECRET_KEY)
-# 2. Database migration not applied
-# 3. Pinecone API key invalid or expired
-```
-
-### Database Connection Errors
-
-```bash
-# Verify the DATABASE_URL is correct
-# Check that the Render PostgreSQL instance is running
-# Ensure SSL mode is configured if required
-```
+Returns `200` if all healthy, `503` with failure details otherwise.

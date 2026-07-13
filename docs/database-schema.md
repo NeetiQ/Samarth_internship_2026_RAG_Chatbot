@@ -1,130 +1,226 @@
 # Database Schema
 
-The backend uses **PostgreSQL** (managed on Render) for relational data and **Pinecone** for vector storage.
-
----
-
-## PostgreSQL Tables
-
-### 1. `users`
-Stores registered user accounts for JWT-based authentication.
-- `id` (PK, Integer, auto-increment)
-- `email` (String, unique, indexed)
-- `hashed_password` (String — bcrypt hash via passlib)
-- `created_at` (DateTime)
-
-### 2. `documents`
-Stores uploaded file metadata and structured legal metadata.
-- `id` (PK, Integer, auto-increment)
-- `title`, `filename`, `file_type`, `file_path`
-- **Structured Metadata**: `court`, `case_number`, `judgment_date`, `source`, `language`
-- `created_at`, `updated_at`
-
-### 3. `chunks`
-Stores text chunks extracted from documents.
-- `id` (PK, Integer, auto-increment)
-- `document_id` (FK → documents.id)
-- `content` (Text)
-- **Structured Metadata**: `page_number`, `section`, `paragraph`, `chunk_index`
-- `created_at`
-
-### 4. `processing_jobs`
-Tracks asynchronous ingestion job stages.
-- `id` (PK, Integer, auto-increment)
-- `document_id` (FK → documents.id)
-- `stage` (Enum: UPLOADED, OCR, EXTRACTION, CLEANING, CHUNKING, EMBEDDING, COMPLETED, FAILED)
-- `status` (String: pending, in_progress, completed, failed)
-- `error_message` (Text, nullable)
-- `started_at`, `completed_at`
-
-### 5. `chat_sessions`
-Stores conversation sessions.
-- `id` (PK, Integer, auto-increment)
-- `title` (String)
-- `created_at`, `updated_at`
-
-### 6. `chat_messages`
-Stores individual messages within a chat session.
-- `id` (PK, Integer, auto-increment)
-- `session_id` (FK → chat_sessions.id)
-- `role` (String: "user" or "assistant")
-- `content` (Text)
-- `created_at`
-
-### 7. `citations`
-Maps assistant messages back to source chunks.
-- `id` (PK, Integer, auto-increment)
-- `message_id` (FK → chat_messages.id)
-- `chunk_id` (FK → chunks.id)
-- `score` (Float — relevance score)
-
-### 8. `prompt_logs`
-Telemetry for prompt engineering debugging.
-- `id` (PK, Integer, auto-increment)
-- `session_id` (FK → chat_sessions.id)
-- `prompt_text` (Text)
-- `model` (String)
-- `tokens_used` (Integer)
-- `created_at`
-
----
-
-## Pinecone Vector Storage
-
-Vectors are stored in Pinecone with the following structure:
-
-```json
-{
-  "id": "chunk_12345",
-  "values": [0.123, 0.456, ...],
-  "metadata": {
-    "document_id": "doc_123",
-    "document_name": "Contract_A.pdf",
-    "chunk_index": 5,
-    "page_number": 2,
-    "text": "...chunk text...",
-    "document_type": "contract"
-  }
-}
-```
-
-- **Embedding Model**: `sentence-transformers/all-MiniLM-L6-v2`
-- **Dimension**: 384
-- **Similarity Metric**: Cosine
-
----
-
-## Migrations
-
-Managed via **Alembic** from the `backend/alembic/` directory.
-
-```bash
-# Apply all migrations
-cd backend
-python -m alembic upgrade head
-
-# Create new migration
-python -m alembic revision --autogenerate -m "description"
-```
-
----
+All tables are managed by Alembic migrations and use PostgreSQL (Neon). The async driver is `asyncpg`.
 
 ## ER Diagram
 
-```
-users
-  │
-  └── (auth only, not FK-linked to documents in current schema)
+```mermaid
+erDiagram
+    app_users ||--o{ documents : "owns"
+    app_users ||--o{ chat_sessions : "owns"
+    documents ||--o{ legal_chunks : "contains"
+    documents ||--o{ processing_jobs : "tracks"
+    chat_sessions ||--o{ chat_messages : "contains"
+    chat_sessions ||--o{ prompt_logs : "logs"
+    chat_messages ||--o{ citations : "references"
+    legal_chunks ||--o{ citations : "cited_in"
 
-documents ─── 1:N ──── chunks
-    │                      │
-    │                      └── citations (chunk_id)
-    │
-    └── 1:N ──── processing_jobs
+    app_users {
+        int id PK
+        varchar email UK
+        varchar hashed_password
+        varchar full_name
+        bool is_active
+        bool is_superuser
+        timestamp created_at
+        timestamp updated_at
+    }
 
-chat_sessions ─── 1:N ──── chat_messages
-                                │
-                                └── citations (message_id)
-                                │
-                                └── prompt_logs (session_id)
+    documents {
+        int id PK
+        int user_id FK
+        bool is_shared
+        varchar title
+        varchar filename
+        varchar file_type
+        varchar file_path
+        varchar court
+        varchar case_number
+        timestamp judgment_date
+        varchar source
+        varchar language
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    legal_chunks {
+        int id PK
+        varchar chunk_id UK
+        int document_id FK
+        text page_content
+        jsonb metadata
+        timestamp created_at
+    }
+
+    processing_jobs {
+        int id PK
+        int document_id FK
+        enum stage
+        varchar status
+        timestamp started_at
+        timestamp completed_at
+        text error_message
+    }
+
+    chat_sessions {
+        int id PK
+        int user_id FK
+        varchar title
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    chat_messages {
+        int id PK
+        int session_id FK
+        enum role
+        text content
+        timestamp created_at
+    }
+
+    citations {
+        int id PK
+        int message_id FK
+        int chunk_id FK
+        float score
+    }
+
+    prompt_logs {
+        int id PK
+        int session_id FK
+        text prompt_text
+        varchar model
+        int tokens_used
+        timestamp created_at
+    }
 ```
+
+---
+
+## Tables
+
+### `app_users`
+
+Stores registered user accounts.
+
+| Column            | Type         | Notes                     |
+|-------------------|--------------|---------------------------|
+| `id`              | `int` PK     | Auto-increment            |
+| `email`           | `varchar(255)` | Unique, indexed         |
+| `hashed_password` | `varchar(255)` | bcrypt hash             |
+| `full_name`       | `varchar(255)` | Optional                |
+| `is_active`       | `bool`       | Default `true`            |
+| `is_superuser`    | `bool`       | Default `false`           |
+| `created_at`      | `timestamp`  |                           |
+| `updated_at`      | `timestamp`  |                           |
+
+**Relationships:** → `documents`, `chat_sessions` (cascade delete)
+
+---
+
+### `documents`
+
+Stores uploaded legal document metadata.
+
+| Column          | Type           | Notes                          |
+|-----------------|----------------|--------------------------------|
+| `id`            | `int` PK       | Auto-increment                 |
+| `user_id`       | `int` FK       | → `app_users.id` (CASCADE)    |
+| `is_shared`     | `bool`         | Default `false`                |
+| `title`         | `varchar(255)` | Required                       |
+| `filename`      | `varchar(255)` | Original filename              |
+| `file_type`     | `varchar(50)`  | MIME type                      |
+| `file_path`     | `varchar(512)` | Storage path                   |
+| `court`         | `varchar(255)` | Court name                     |
+| `case_number`   | `varchar(100)` | Case identifier                |
+| `judgment_date` | `timestamp`    | Date of judgment               |
+| `source`        | `varchar(255)` | Source of document             |
+| `language`      | `varchar(50)`  | Language code                  |
+
+**Relationships:** → `legal_chunks`, `processing_jobs` (cascade delete)
+
+---
+
+### `legal_chunks`
+
+Stores text chunks extracted from documents. Embeddings are stored externally in Pinecone.
+
+| Column        | Type           | Notes                            |
+|---------------|----------------|----------------------------------|
+| `id`          | `int` PK       | Auto-increment                   |
+| `chunk_id`    | `varchar(255)` | Unique external identifier       |
+| `document_id` | `int` FK       | → `documents.id` (CASCADE)      |
+| `page_content`| `text`         | Chunk text content               |
+| `metadata`    | `jsonb`        | Flexible metadata (source, page) |
+
+**Relationships:** → `citations`
+
+---
+
+### `processing_jobs`
+
+Tracks document processing pipeline stages.
+
+| Column          | Type           | Notes                                                  |
+|-----------------|----------------|--------------------------------------------------------|
+| `id`            | `int` PK       |                                                        |
+| `document_id`   | `int` FK       | → `documents.id` (CASCADE)                            |
+| `stage`         | `enum`         | `UPLOADED` `OCR` `EXTRACTION` `CLEANING` `CHUNKING` `EMBEDDING` `COMPLETED` `FAILED` |
+| `status`        | `varchar(50)`  | `pending` / `in_progress` / `completed` / `failed`    |
+| `error_message` | `text`         | Error details on failure                               |
+
+---
+
+### `chat_sessions`
+
+Groups chat messages into conversations.
+
+| Column     | Type           | Notes                       |
+|------------|----------------|-----------------------------|
+| `id`       | `int` PK       |                             |
+| `user_id`  | `int` FK       | → `app_users.id` (CASCADE) |
+| `title`    | `varchar(255)` | Session title               |
+
+**Relationships:** → `chat_messages`, `prompt_logs` (cascade delete)
+
+---
+
+### `chat_messages`
+
+Stores individual messages in a chat session.
+
+| Column       | Type      | Notes                           |
+|--------------|-----------|---------------------------------|
+| `id`         | `int` PK  |                                |
+| `session_id` | `int` FK  | → `chat_sessions.id` (CASCADE)|
+| `role`       | `enum`    | `user` / `assistant` / `system`|
+| `content`    | `text`    | Message text                   |
+
+**Relationships:** → `citations` (cascade delete)
+
+---
+
+### `citations`
+
+Links chat messages to the source chunks used for generating the response.
+
+| Column       | Type      | Notes                              |
+|--------------|-----------|------------------------------------|
+| `id`         | `int` PK  |                                   |
+| `message_id` | `int` FK  | → `chat_messages.id` (CASCADE)   |
+| `chunk_id`   | `int` FK  | → `legal_chunks.id` (SET NULL)   |
+| `score`      | `float`   | Relevance score                   |
+
+---
+
+### `prompt_logs`
+
+Audit log of prompts sent to the LLM.
+
+| Column        | Type           | Notes                           |
+|---------------|----------------|---------------------------------|
+| `id`          | `int` PK       |                                |
+| `session_id`  | `int` FK       | → `chat_sessions.id` (CASCADE)|
+| `prompt_text` | `text`         | Full prompt text               |
+| `model`       | `varchar(100)` | Model name used                |
+| `tokens_used` | `int`          | Token count                    |
