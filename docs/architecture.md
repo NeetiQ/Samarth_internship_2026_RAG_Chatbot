@@ -1,5 +1,7 @@
 # Architecture Overview
 
+![Legal RAG Chatbot Architecture Overview](images/legal-rag-architecture-overview.png)
+
 ## System Architecture
 
 NyayaAI is a Legal RAG (Retrieval-Augmented Generation) system that enables users to upload legal documents, search through them semantically, and chat with an AI assistant that provides cited, context-aware answers grounded in the uploaded corpus.
@@ -83,15 +85,15 @@ Gemini LLM Generation → Citation Extraction → Response
 **Deployment**: Vercel (https://samarth-internship-2026-rag-chatbot.vercel.app)
 
 **Pages & Routes**:
-| Route                | Page               | Description                        |
-| -------------------- | ------------------ | ---------------------------------- |
-| `/`                  | Login              | User authentication                |
-| `/signup`            | Signup             | New user registration              |
-| `/dashboard`         | Dashboard          | Stats overview and hero card       |
-| `/chat`              | Chat               | AI chat with RAG-powered responses |
-| `/upload-documents`  | Upload Documents   | Document upload interface          |
-| `/compare`           | Case Comparison    | Side-by-side case comparison       |
-| `/settings`          | Settings           | User preferences and theme toggle  |
+| Route               | Page             | Description                        |
+| ------------------- | ---------------- | ---------------------------------- |
+| `/`                 | Login            | User authentication                |
+| `/signup`           | Signup           | New user registration              |
+| `/dashboard`        | Dashboard        | Stats overview and hero card       |
+| `/chat`             | Chat             | AI chat with RAG-powered responses |
+| `/upload-documents` | Upload Documents | Document upload interface          |
+| `/compare`          | Case Comparison  | Side-by-side case comparison       |
+| `/settings`         | Settings         | User preferences and theme toggle  |
 
 **Key Components**:
 - `components/chat/`: ChatWindow, ChatInput, ChatHeader, MessageBubble, ConversationList
@@ -137,6 +139,8 @@ backend/
 ```
 
 ## Data Flow
+
+![Legal RAG Chatbot Data Flow Diagram](images/legal-rag-data-flow-diagram.png)
 
 ### Document Ingestion Flow
 
@@ -234,17 +238,17 @@ citations (id, message_id, chunk_id, score)
 
 ## Technology Stack
 
-| Layer       | Technology                                              |
-| ----------- | ------------------------------------------------------- |
-| Frontend    | React 19, Vite 8, Tailwind CSS v4, React Router v7     |
-| Backend     | Python 3.13, FastAPI, Pydantic v2, SQLAlchemy 2 (async)|
-| Database    | PostgreSQL (Render managed)                             |
-| Vector DB   | Pinecone                                                |
-| Embeddings  | Sentence-Transformers `all-MiniLM-L6-v2` (384-dim)     |
-| LLM         | Google Gemini (via `google-genai` SDK)                  |
-| Auth        | JWT (python-jose), bcrypt (passlib)                     |
-| Hosting     | Frontend: Vercel, Backend: Render                       |
-| Containers  | Docker, Docker Compose                                  |
+| Layer      | Technology                                              |
+| ---------- | ------------------------------------------------------- |
+| Frontend   | React 19, Vite 8, Tailwind CSS v4, React Router v7      |
+| Backend    | Python 3.13, FastAPI, Pydantic v2, SQLAlchemy 2 (async) |
+| Database   | PostgreSQL (Render managed)                             |
+| Vector DB  | Pinecone                                                |
+| Embeddings | Sentence-Transformers `all-MiniLM-L6-v2` (384-dim)      |
+| LLM        | Google Gemini (via `google-genai` SDK)                  |
+| Auth       | JWT (python-jose), bcrypt (passlib)                     |
+| Hosting    | Frontend: Vercel, Backend: Render                       |
+| Containers | Docker, Docker Compose                                  |
 
 ## Security
 

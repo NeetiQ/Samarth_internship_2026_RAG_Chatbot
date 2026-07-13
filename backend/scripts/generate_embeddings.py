@@ -7,9 +7,11 @@ import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
-from sentence_transformers import SentenceTransformer
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
+from retrieval.embeddings.client import EmbeddingClient
+
 load_dotenv(REPO_ROOT / ".env")
 
 CHUNKED_PATH = Path(os.getenv("CHUNKED_DOCUMENTS_PATH", REPO_ROOT / "chunked_documents.jsonl"))
@@ -39,17 +41,18 @@ def main() -> int:
     records = load_chunks(CHUNKED_PATH)
     print(f"Total chunks: {len(records)}")
 
-    print(f"Loading model {MODEL_NAME}...")
-    model = SentenceTransformer(MODEL_NAME)
+    print("Initializing EmbeddingClient...")
+    client = EmbeddingClient()
     texts = [record["page_content"] for record in records]
 
-    print("Generating embeddings...")
-    embeddings = model.encode(
-        texts,
-        batch_size=BATCH_SIZE,
-        normalize_embeddings=True,
-        show_progress_bar=True,
-    )
+    print("Generating embeddings in batches...")
+    embeddings = []
+    
+    for i in range(0, len(texts), BATCH_SIZE):
+        print(f"Processing batch {i//BATCH_SIZE + 1}...")
+        batch_texts = texts[i:i+BATCH_SIZE]
+        batch_embeddings = client.encode_batch(batch_texts)
+        embeddings.extend(batch_embeddings)
 
     EMBEDDED_PATH.parent.mkdir(parents=True, exist_ok=True)
     print(f"Writing {EMBEDDED_PATH}...")

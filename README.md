@@ -37,34 +37,33 @@ Gemini-powered answers that include citations.
 ## Architecture
 
 ```
-┌─────────────┐     JWT      ┌───────────────────┐
-│   React     │ ──────────►  │  FastAPI Backend  │
-│  Frontend   │              │  (backend/app)    │
-└─────────────┘              └─────────┬──────────┘
+┌─────────────┐     JWT      ┌───────────────────┐      HTTP      ┌──────────────────────┐
+│   React     │ ──────────►  │  FastAPI Backend  │ ─────────────► │ HF Embedding Service │
+│  Frontend   │              │  (backend/app)    │                │ (legal-rag-embed...) │
+└─────────────┘              └─────────┬──────────┘               └──────────────────────┘
                                         │
                     ┌───────────────────┼───────────────────┐
                     ▼                   ▼                   ▼
               ┌──────────┐      ┌──────────────┐    ┌──────────────┐
-              │PostgreSQL│      │ chunking/ +  │    │  rag_chat/   │
+              │ Neon/PG  │      │ chunking/ +  │    │  rag_chat/   │
               │ Pinecone │      │ retrieval/   │    │  (Gemini +   │
-              │          │      │ (ingestion & │    │  citations)  │
+              │   SaaS   │      │ (ingestion & │    │  citations)  │
               │          │      │  search)     │    │              │
               └──────────┘      └──────────────┘    └──────────────┘
 ```
 
 The repository was originally built as separately-developed modules — `chunking/`,
-`retrieval/`, `rag_chat/`, and an early `ingestion/` package — referred to in code comments as
-"Team A/B/C" work. In this release they are **not separate services**: `backend/app/services/`
-imports them directly (via `sys.path` manipulation) and calls their classes in-process from a
-single FastAPI app. There is no ingestion/retrieval/chat network hop.
+`retrieval/`, `rag_chat/`, and an early `ingestion/` package. In this release they are 
+unified into the main FastAPI app, except for the **embedding generation** which has been 
+decoupled into a dedicated Hugging Face Space microservice (`legal-rag-embedding-service`).
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
 | Backend API | FastAPI 0.116, SQLAlchemy 2 (async, `asyncpg`), Alembic |
-| Database | PostgreSQL 16 + `Pinecone/Pinecone:pg16` image |
-| Embeddings | `sentence-transformers` 5.0, `BAAI/bge-small-en-v1.5` (384-dim) |
+| Database | PostgreSQL 16 (e.g. Neon) + Pinecone (SaaS Vector Database) |
+| Embeddings | External API (HF Spaces) via `legal-rag-embedding-service` (`BAAI/bge-small-en-v1.5`, 384-dim) |
 | LLM | Google Gemini via `google-genai`, default model `gemini-2.5-flash` |
 | OCR / extraction | PyMuPDF (`pdf_extractor.py`); `paddleocr` is a backend dependency but is not
   wired into the live ingestion path in this release — text extraction currently runs through
@@ -84,7 +83,7 @@ single FastAPI app. There is no ingestion/retrieval/chat network hop.
 git clone <repo-url>
 cd legal-rag
 cp .env.example .env
-# Edit .env — set GEMINI_API_KEY and SECRET_KEY at minimum
+# Edit .env — set GEMINI_API_KEY, PINECONE_API_KEY, EMBEDDING_SERVICE_URL and SECRET_KEY
 docker compose up --build
 ```
 
@@ -127,13 +126,15 @@ inserted with `is_shared=true` (see `backend/scripts/seed_corpus.py`).
 
 ## Running Locally (without Docker)
 
-### 1. Database
+### 1. Database and Pinecone
 
-```bash
-docker compose up db -d
-```
+Ensure you have a PostgreSQL database running (e.g., via Neon or local postgres) and a Pinecone SaaS index configured. Ensure your `DATABASE_URL` contains `ssl=require` if using a cloud DB like Neon.
 
-### 2. Backend
+### 2. Embedding Service
+
+Run the `legal-rag-embedding-service` on port 7860 (or use the deployed Hugging Face Space).
+
+### 3. Backend
 
 ```bash
 cp .env.example .env
@@ -160,13 +161,15 @@ Key settings, from `backend/app/core/settings.py`:
 
 | Variable | Default | Description |
 |---|---|---|
-| `DATABASE_URL` | `postgresql+asyncpg://postgres:postgres@localhost:5432/legal_rag` | Async PostgreSQL connection string |
+| `DATABASE_URL` | `postgresql+asyncpg://postgres:postgres@localhost:5432/legal_rag` | Async PostgreSQL connection string (use `ssl=require` for Neon) |
 | `SECRET_KEY` | `CHANGE-ME-IN-PRODUCTION` | JWT signing secret — **must** be changed for production |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `60` | JWT lifetime |
 | `GEMINI_API_KEY` | *(empty)* | Required for `/api/v1/chat` to function |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model name |
-| `EMBEDDING_MODEL_NAME` | `BAAI/bge-small-en-v1.5` | SentenceTransformer model |
-| `EMBEDDING_DIMENSION` | `384` | Must match the model's output size and the `legal_chunks.embedding` column |
+| `EMBEDDING_SERVICE_URL` | `http://localhost:7860` | URL for the decoupled embedding service (Hugging Face Space) |
+| `EMBEDDING_SERVICE_API_KEY` | *(empty)* | Auth token for the embedding service |
+| `PINECONE_API_KEY` | *(empty)* | Required for Pinecone vector storage |
+| `PINECONE_INDEX` | `legal_rag_index` | Target Pinecone index name |
 | `CHUNK_SIZE` / `CHUNK_OVERLAP` | `500` / `50` | Characters per chunk / overlap |
 | `SEED_CORPUS` | `true` | Load the pre-built corpus on startup |
 | `GENERATE_EMBEDDINGS_ON_SEED` | `false` | Generate `embedded_documents.jsonl` if missing |

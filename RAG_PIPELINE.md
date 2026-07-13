@@ -23,7 +23,7 @@ graph TD
 | Metadata Extraction | Captures source, page numbers, title, etc. | This is the data citations are built from later — losing it here means answers can't be traced back to a source |
 | Cleaning | Normalizes whitespace, removes OCR artifacts/noise | Embedding quality degrades on noisy text; clean input produces more reliable similarity search |
 | Chunking | Splits cleaned text into fixed-size segments | A recursive character text splitter breaks documents into **1000-character chunks with 200-character overlap** — small enough for precise retrieval, with overlap to avoid severing context across chunk boundaries |
-| Embedding Generation | Converts each chunk into a dense vector via `BAAI/bge-small-en-v1.5` | This is what makes semantic (not just keyword) search possible |
+| Embedding Generation | Sends chunks to the `legal-rag-embedding-service` (HF Space) | Generates dense vectors via `BAAI/bge-small-en-v1.5` over a dedicated HTTP API, saving backend memory and optimizing deployment |
 | Vector Storage | Writes vectors + metadata into Pinecone | Makes chunks searchable via cosine similarity |
 | Processing Job | Tracks status (`uploaded` → `extracting` → `chunked` → `processed` → `failed`) | Gives the frontend and API consumers visibility into long-running async processing |
 
@@ -39,7 +39,7 @@ graph TD
     TK --> MC[Metadata Collection]
 ```
 
-The retrieval module generates a real-time embedding for the incoming query, connects to the PostgreSQL/Pinecone store, and runs a cosine similarity lookup to fetch the Top-K most relevant chunks, returning them with their metadata (source, page, chunk ID) for the chat layer to consume.
+The retrieval module sends the incoming query to the embedding service, connects to the Pinecone store, and runs a cosine similarity lookup to fetch the Top-K most relevant chunks, returning them with their metadata (source, page, chunk ID) for the chat layer to consume.
 
 > **📋 PROPOSED DESIGN — retrieval scope.** The source spec does not scope retrieval by user. To support the ownership model described in [DATABASE_DESIGN.md](./DATABASE_DESIGN.md), the similarity search is scoped to **the shared legal corpus plus the current user's own uploaded documents only** — never another user's private documents. See [SECURITY.md](./SECURITY.md) for enforcement details.
 

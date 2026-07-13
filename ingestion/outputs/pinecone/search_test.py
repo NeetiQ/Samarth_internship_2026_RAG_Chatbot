@@ -1,10 +1,17 @@
+import sys
+from pathlib import Path
+
+# Add repo root to sys path
+REPO_ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(REPO_ROOT))
+
 from pinecone import Pinecone
-from sentence_transformers import SentenceTransformer
+from retrieval.embeddings.client import EmbeddingClient
 
 from embedding_config import *
 
-print("Loading embedding model...")
-model = SentenceTransformer(MODEL_NAME)
+print("Initializing embedding client...")
+client = EmbeddingClient()
 
 print("Connecting to Pinecone...")
 pc = Pinecone(api_key=PINECONE_API_KEY)
@@ -13,7 +20,7 @@ index = pc.Index(PINECONE_INDEX_NAME)
 query = input("\nEnter your query: ").strip()
 
 print("\nGenerating embedding...")
-embedding = model.encode(query).tolist()
+embedding = client.encode(query)
 
 print("Searching Pinecone...\n")
 
