@@ -10,34 +10,39 @@ export default function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("");
 
   const handleGoogleLogin = () => {
-    alert("Google Login is not implemented yet.");
+    setMessageType("error");
+    setMessage("Google Login is not implemented yet.");
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setMessage("");
 
     try {
       // Clear any previous session
       localStorage.removeItem("token");
       localStorage.removeItem("userEmail");
 
-     const res = await fetch(`${API_URL}/api/v1/auth/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-  },
-      body: JSON.stringify({
-        email,
-        password,
-  }),
-});
+      const res = await fetch(`${API_URL}/api/v1/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
 
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.detail || "Login failed");
+        setMessageType("error");
+        setMessage(data.detail || "Login failed");
         return;
       }
 
@@ -45,12 +50,16 @@ export default function Login() {
       localStorage.setItem("token", data.access_token);
       localStorage.setItem("userEmail", email);
 
-      alert("Login Successful ✅");
+      setMessageType("success");
+      setMessage("Login successful! Redirecting...");
 
-      navigate("/dashboard");
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 800);
     } catch (err) {
       console.error(err);
-      alert("Backend not reachable");
+      setMessageType("error");
+      setMessage("Backend not reachable");
     }
   };
 
@@ -75,6 +84,22 @@ export default function Login() {
 
         <div className="login-card">
           <h2>Welcome Back</h2>
+
+          {message && (
+            <p
+              style={{
+                textAlign: "center",
+                marginBottom: "15px",
+                padding: "10px",
+                borderRadius: "8px",
+                fontSize: "14px",
+                color: messageType === "success" ? "#4ade80" : "#f87171",
+                background: messageType === "success" ? "#14532d33" : "#7f1d1d33",
+              }}
+            >
+              {message}
+            </p>
+          )}
 
           <form onSubmit={handleLogin}>
 

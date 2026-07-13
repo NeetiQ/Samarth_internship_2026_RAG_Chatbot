@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -11,11 +10,14 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState(""); // "success" or "error"
 
   const handleSignup = async (e) => {
     e.preventDefault();
 
     setLoading(true);
+    setMessage("");
 
     try {
       const res = await fetch(`${API_URL}/api/v1/auth/signup`, {
@@ -33,18 +35,23 @@ export default function Signup() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.detail || "Signup failed");
+        setMessageType("error");
+        setMessage(data.detail || "Signup failed");
         setLoading(false);
         return;
       }
 
-      alert("Account created successfully! Please login.");
+      setMessageType("success");
+      setMessage("Account created successfully! Redirecting to login...");
 
-      navigate("/");
+      setTimeout(() => {
+        navigate("/");
+      }, 1500);
 
     } catch (error) {
       console.error(error);
-      alert("Backend not reachable.");
+      setMessageType("error");
+      setMessage("Backend not reachable.");
     }
 
     setLoading(false);
@@ -72,6 +79,22 @@ export default function Signup() {
         <h2 style={{ textAlign: "center", marginBottom: "25px" }}>
           Create Account
         </h2>
+
+        {message && (
+          <p
+            style={{
+              textAlign: "center",
+              marginBottom: "15px",
+              padding: "10px",
+              borderRadius: "8px",
+              fontSize: "14px",
+              color: messageType === "success" ? "#4ade80" : "#f87171",
+              background: messageType === "success" ? "#14532d33" : "#7f1d1d33",
+            }}
+          >
+            {message}
+          </p>
+        )}
 
         <form onSubmit={handleSignup}>
 

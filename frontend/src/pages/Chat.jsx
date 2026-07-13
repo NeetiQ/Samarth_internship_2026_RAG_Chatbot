@@ -11,6 +11,7 @@ function Chat() {
   const { darkMode } = useTheme();
   const [messages, setMessages] = useState([]);
   const [sessionId, setSessionId] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const authHeaders = () => ({
     "Content-Type": "application/json",
@@ -29,6 +30,7 @@ function Chat() {
         setSessionId(data.id);
       } catch (err) {
         console.error(err);
+        setErrorMessage("Could not start a chat session.");
       }
     };
     createSession();
@@ -37,6 +39,7 @@ function Chat() {
   const handleSendMessage = async (text) => {
     if (!text.trim()) return;
 
+    setErrorMessage("");
     setMessages((prev) => [...prev, { id: Date.now(), sender: "user", text }]);
 
     try {
@@ -49,7 +52,7 @@ function Chat() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.detail || "Chat failed");
+        setErrorMessage(data.detail || "Chat failed");
         return;
       }
 
@@ -59,7 +62,7 @@ function Chat() {
       ]);
     } catch (err) {
       console.error(err);
-      alert("Backend not reachable");
+      setErrorMessage("Backend not reachable");
     }
   };
 
@@ -69,6 +72,19 @@ function Chat() {
       <div className="flex-1 flex flex-col p-6 overflow-hidden">
         <div className={`flex-1 rounded-3xl border overflow-hidden flex flex-col shadow-xl mt-6 ${darkMode ? "bg-[#111827] border-[#1E293B]" : "bg-white border-slate-200"}`}>
           <ChatHeader messages={messages} />
+          {errorMessage && (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "8px",
+                fontSize: "13px",
+                color: "#f87171",
+                background: "#7f1d1d33",
+              }}
+            >
+              {errorMessage}
+            </div>
+          )}
           <ChatWindow messages={messages} />
           <ChatInput onSend={handleSendMessage} onQuickAction={() => {}} />
         </div>
