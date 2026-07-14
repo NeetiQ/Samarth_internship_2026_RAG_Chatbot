@@ -153,14 +153,19 @@ def create_app() -> FastAPI:
         except Exception as e:
             errors["pinecone"] = f"Pinecone connection failed: {str(e)}"
 
-        # 3. Embedding Service check
+        # 3. HF Inference Service check (embedding + reranker)
         try:
             client = EmbeddingClient()
             health_status = client.get_health()
-            if health_status.get("status") != "healthy":
-                errors["embedding_service"] = f"Embedding Service status: {health_status.get('status')}"
+            svc_status = health_status.get("status", "unknown")
+            if svc_status not in ("healthy", "degraded"):
+                errors["hf_service"] = (
+                    f"HF Inference Service status: {svc_status}"
+                )
+            elif not health_status.get("reranker_loaded", False):
+                errors["hf_service"] = "Reranker model not loaded on HF service."
         except Exception as e:
-            errors["embedding_service"] = f"Embedding Service connection failed: {str(e)}"
+            errors["hf_service"] = f"HF Inference Service connection failed: {str(e)}"
 
         if errors:
             raise HTTPException(
@@ -174,8 +179,8 @@ def create_app() -> FastAPI:
             "components": {
                 "database": "healthy",
                 "pinecone": "healthy",
-                "embedding_service": "healthy"
-            }
+                "hf_service": "healthy",
+            },
         }
 
     return app

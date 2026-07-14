@@ -11,18 +11,26 @@ services:
       - key: DEBUG
         value: "false"
       - key: DATABASE_URL
-        sync: false # User must set their database connection string in Render Dashboard
+        sync: false  # Set in Render Dashboard
       - key: GEMINI_API_KEY
-        sync: false # User must set their Gemini API key in Render Dashboard
+        sync: false  # Set in Render Dashboard
       - key: SECRET_KEY
         value: aTBFTehQyAGm4p53
       - key: PINECONE_API_KEY
-        sync: false # User must set their Pinecone API key in Render Dashboard
+        sync: false  # Set in Render Dashboard
       - key: PINECONE_INDEX
         value: legal-rag
       - key: PINECONE_NAMESPACE
         value: default
+      # HF Inference Service — shared base URL for /embed/* and /rerank
       - key: EMBEDDING_SERVICE_URL
         value: https://yashmit-legal-rag.hf.space
       - key: EMBEDDING_SERVICE_API_KEY
         value: aTBFTehQyAGm4p53
+      # Reranker service lives on the same HF Space host
+      - key: RERANKER_SERVICE_URL
+        value: https://yashmit-legal-rag.hf.space
+      - key: REQUEST_TIMEOUT
+        value: "30"
+      - key: RERANKER_ENABLED
+        value: "true"

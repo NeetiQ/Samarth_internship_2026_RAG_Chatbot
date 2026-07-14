@@ -79,8 +79,10 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL_NAME: str = "BAAI/bge-small-en-v1.5"
     EMBEDDING_DIMENSION: int = 384
     RETRIEVAL_TOP_K: int = 5
-    RERANKER_MODEL_NAME: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-    RERANKER_TOP_K: int = 3
+    # Reranker is now served by the HF Inference Service.
+    # RERANKER_SERVICE_URL defaults to EMBEDDING_SERVICE_URL (same HF Space host).
+    RERANKER_SERVICE_URL: str = ""
+    REQUEST_TIMEOUT: int = 30
     EMBEDDING_SERVICE_URL: str = "http://localhost:7860"
     EMBEDDING_SERVICE_API_KEY: str = ""
     

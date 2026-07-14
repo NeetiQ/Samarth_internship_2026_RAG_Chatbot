@@ -33,24 +33,27 @@ graph TD
 
 ```mermaid
 graph TD
-    Q[User Query] --> QE[Query Embedding]
-    QE --> SS[Similarity Search - Pinecone Cosine]
+    Q[User Query] --> QE[HF Space POST /embed/query]
+    QE --> SS[Pinecone Similarity Search - Cosine]
     SS --> TK[Top-K Retrieval]
-    TK --> MC[Metadata Collection]
+    TK --> RR[HF Space POST /rerank]
+    RR --> MC[Metadata Collection]
+    MC --> PROMPT[Prompt Construction]
 ```
 
-The retrieval module sends the incoming query to the embedding service, connects to the Pinecone store, and runs a cosine similarity lookup to fetch the Top-K most relevant chunks, returning them with their metadata (source, page, chunk ID) for the chat layer to consume.
+The retrieval module sends the incoming query to the HF embedding service, connects to the Pinecone store, runs a cosine similarity lookup to fetch the Top-K most relevant chunks, then **reranks them via the HF reranker service** (`POST /rerank`) before returning them to the chat layer with their metadata (source, page, chunk ID).
 
-> **📋 PROPOSED DESIGN — retrieval scope.** The source spec does not scope retrieval by user. To support the ownership model described in [DATABASE_DESIGN.md](./DATABASE_DESIGN.md), the similarity search is scoped to **the shared legal corpus plus the current user's own uploaded documents only** — never another user's private documents. See [SECURITY.md](./SECURITY.md) for enforcement details.
+If the reranker service is temporarily unavailable, the pipeline falls back to the original Pinecone cosine-similarity ordering — the API remains available and returns a valid response.
 
 ## Part 3 — RAG Chat Pipeline
 
 ```mermaid
 graph TD
-    Q[Question] --> E[Embedding]
-    E --> S[Similarity Search]
+    Q[Question] --> E[HF Space /embed/query]
+    E --> S[Pinecone Similarity Search]
     S --> T[Top-K Retrieval]
-    T --> M[Metadata Collection]
+    T --> RR[HF Space /rerank]
+    RR --> M[Metadata Collection]
     M --> P[Prompt Construction]
     P --> C[Conversation Context]
     C --> GM[Gemini]

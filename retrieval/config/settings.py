@@ -46,13 +46,21 @@ class Settings:
         os.getenv("EMBEDDING_DIMENSION", 384)
     )
 
+    # Base URL for the Hugging Face Inference Service.
+    # Both /embed/* and /rerank endpoints share this host.
     EMBEDDING_SERVICE_URL = os.getenv("EMBEDDING_SERVICE_URL", "http://localhost:7860")
     EMBEDDING_SERVICE_API_KEY = os.getenv("EMBEDDING_SERVICE_API_KEY", "")
 
     # ==========================================
+    # HTTP Client Configuration
+    # ==========================================
+    # Timeout (seconds) for all outbound calls to the HF service.
+    REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", 30))
+
+    # ==========================================
     # Retrieval Configuration
     # ==========================================
-    # Number of chunks retrieved from Pinecone
+    # Number of chunks retrieved from Pinecone before reranking
     TOP_K = int(
         os.getenv("TOP_K", 10)
     )
@@ -69,11 +77,6 @@ class Settings:
         "RERANKER_ENABLED",
         "true"
     ).lower() == "true"
-
-    RERANKER_MODEL = os.getenv(
-        "RERANKER_MODEL",
-        "cross-encoder/ms-marco-MiniLM-L-6-v2"
-    )
 
     # Number of chunks returned after reranking
     FINAL_TOP_K = int(

@@ -3,12 +3,6 @@
 # ===========================
 
 google-genai>=0.1.2
-sentence-transformers==5.0.0
-transformers==4.53.2
-torch>=2.2.0
-huggingface-hub>=0.33.4
-tokenizers>=0.21.0
-safetensors>=0.5.3
 
 # ===========================
 # LangChain
